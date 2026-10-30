@@ -1,0 +1,7 @@
+syntax = "proto3";
+package sdk_demo;
+message Heartbeat {
+  uint32 logical_core = 1;
+  uint32 sequence = 2;
+  string label = 3;
+}

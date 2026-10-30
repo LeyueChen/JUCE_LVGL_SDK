@@ -1,0 +1,9 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {"label": "SDK: build", "type": "process", "command": "powershell.exe", "args": ["-NoProfile", "-File", "${workspaceFolder}/tools/sdk.ps1", "build"], "group": {"kind": "build", "isDefault": true}, "problemMatcher": "$msCompile"},
+    {"label": "SDK: test", "type": "process", "command": "powershell.exe", "args": ["-NoProfile", "-File", "${workspaceFolder}/tools/sdk.ps1", "test"], "problemMatcher": "$msCompile"},
+    {"label": "SDK: sync", "type": "process", "command": "powershell.exe", "args": ["-NoProfile", "-File", "${workspaceFolder}/tools/sdk.ps1", "sync"], "problemMatcher": []},
+    {"label": "SDK: menuconfig", "type": "process", "command": "powershell.exe", "args": ["-NoProfile", "-File", "${workspaceFolder}/tools/sdk.ps1", "menuconfig"], "problemMatcher": []}
+  ]
+}

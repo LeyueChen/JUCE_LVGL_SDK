@@ -1,0 +1,8 @@
+/.cache/
+/.local/
+/.venv/
+/out/
+/CMakeUserPresets.json
+__pycache__/
+*.pyc
+*.user

@@ -1,0 +1,34 @@
+flowchart LR
+    subgraph HOST["Windows HOST：独立于目标逻辑核"]
+        J["JUCE 消息线程：窗口 / 输入 / 绘制"]
+        IO["宿主 I/O 与音频：文件 / 设备 / 回调"]
+        BR["宿主桥接：输入事件 / 帧缓冲交换 / I/O 请求与完成"]
+        J <--> BR
+        IO <--> BR
+    end
+    subgraph C0["逻辑 CPU0：唯一启用 / FreeRTOS"]
+        K["SDK 平台启动 FreeRTOS Windows port"]
+        E["BootTask 调用 core_cpu_0"]
+        UI["UiTask：唯一 LVGL 所有者"]
+        APP["AppTask：用户业务"]
+        ST["StorageTask：统一调度 littlefs / FlashDB"]
+        K --> E
+        E --> UI
+        E --> APP
+        E --> ST
+        APP -->|消息与快照| UI
+        APP -->|持久化请求| ST
+    end
+    BR <--> UI
+    BR <--> ST
+    R["Core Runtime：状态 / 入口表 / 亲和性 / IPC 契约"]
+    MAP["CPU0 全部任务宿主线程绑定到选定 Group / Processor"]
+    R --> K
+    R --> MAP
+    MAP -. 应用于任务线程 .-> C0
+    C1["CPU1 RESERVED：core_cpu_1 / 不启动"]
+    C2["CPU2 RESERVED：core_cpu_2 / 不启动"]
+    C3["CPU3 RESERVED：core_cpu_3 / 不启动"]
+    R -. 预留 .-> C1
+    R -. 预留 .-> C2
+    R -. 预留 .-> C3

@@ -1,0 +1,17 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {"major": 3, "minor": 25, "patch": 0},
+  "configurePresets": [{
+    "name": "win-debug",
+    "displayName": "Windows / CPU0 FreeRTOS / Debug",
+    "generator": "Ninja",
+    "binaryDir": "${sourceDir}/out/windows_sim/user/Debug",
+    "cacheVariables": {
+      "CMAKE_BUILD_TYPE": "Debug",
+      "SDK_BOARD": "windows_sim",
+      "Python_EXECUTABLE": "${sourceDir}/.venv/Scripts/python.exe"
+    }
+  }],
+  "buildPresets": [{"name": "win-debug", "configurePreset": "win-debug", "jobs": 4}],
+  "testPresets": [{"name": "win-debug", "configurePreset": "win-debug", "output": {"outputOnFailure": true}}]
+}

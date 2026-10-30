@@ -1,0 +1,74 @@
+mainmenu "LVGL JUCE Portable SDK"
+
+config SDK_CORE_SLOTS
+    int "Logical core slots"
+    range 4 4
+    default 4
+
+config SDK_CPU0_FREERTOS
+    bool
+    default y
+
+config SDK_SECONDARY_SUPPORTED
+    bool
+    default n
+
+config SDK_CPU1_ENABLED
+    bool "Enable logical CPU1"
+    depends on SDK_SECONDARY_SUPPORTED
+    default n
+
+config SDK_SCREEN_WIDTH
+    int "Display width"
+    range 240 1920
+    default 800
+
+config SDK_SCREEN_HEIGHT
+    int "Display height"
+    range 160 1080
+    default 480
+
+config SDK_TICK_RATE_HZ
+    int "FreeRTOS tick rate"
+    range 100 1000
+    default 1000
+
+config SDK_RTOS_HEAP_BYTES
+    int "FreeRTOS heap bytes"
+    range 262144 8388608
+    default 2097152
+
+config SDK_LVGL_HEAP_BYTES
+    int "LVGL private heap bytes"
+    range 262144 16777216
+    default 4194304
+
+menu "Portable components"
+config SDK_CJSON
+    bool "cJSON"
+    default y
+config SDK_LITTLEFS
+    bool "littlefs"
+    default y
+config SDK_FLASHDB
+    bool "FlashDB"
+    default y
+config SDK_NANOPB
+    bool "nanopb runtime"
+    default y
+config SDK_MULTIBUTTON
+    bool "MultiButton"
+    default y
+config SDK_EASYLOGGER
+    bool "EasyLogger"
+    default y
+config SDK_RTNEURAL
+    bool "RTNeural STL backend"
+    default y
+config SDK_ESP_DSP_REF
+    bool "ESP-DSP reference dot product"
+    default y
+config SDK_ESP_NN_REF
+    bool "ESP-NN reference ReLU6"
+    default y
+endmenu

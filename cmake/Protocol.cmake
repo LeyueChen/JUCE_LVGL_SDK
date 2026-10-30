@@ -1,0 +1,30 @@
+function(sdk_generate_protocol target source_directory output_directory)
+    file(GLOB proto_files CONFIGURE_DEPENDS "${source_directory}/*.proto")
+    file(GLOB proto_options CONFIGURE_DEPENDS "${source_directory}/*.options")
+    if(NOT proto_files)
+        return()
+    endif()
+    file(MAKE_DIRECTORY "${output_directory}")
+    set(generated_sources "")
+    foreach(proto IN LISTS proto_files)
+        get_filename_component(stem "${proto}" NAME_WE)
+        set(generated_c "${output_directory}/${stem}.pb.c")
+        set(generated_h "${output_directory}/${stem}.pb.h")
+        add_custom_command(OUTPUT "${generated_c}" "${generated_h}"
+            COMMAND "${Python_EXECUTABLE}" "${SDK_NANOPB_DIR}/generator/nanopb_generator.py"
+                "-I${source_directory}" "-D${output_directory}" "${proto}"
+            DEPENDS "${proto}" ${proto_options}
+            WORKING_DIRECTORY "${source_directory}"
+            COMMENT "Generating nanopb ${stem}" VERBATIM)
+        list(APPEND generated_sources "${generated_c}" "${generated_h}")
+    endforeach()
+    add_library(${target} STATIC ${generated_sources})
+    target_include_directories(${target} PUBLIC "${output_directory}")
+    target_link_libraries(${target} PUBLIC sdk_nanopb)
+endfunction()
+if(CONFIG_SDK_NANOPB STREQUAL "y")
+    sdk_generate_protocol(sdk_user_protocol "${SDK_APP_DIR}/protocol" "${SDK_GENERATED_DIR}/protocol")
+    if(TARGET sdk_user_protocol)
+        target_link_libraries(sdk_components INTERFACE sdk_user_protocol)
+    endif()
+endif()

@@ -1,0 +1,132 @@
+{
+  "schema": 1,
+  "dependencies": [
+    {
+      "name": "juce",
+      "repository": "juce-framework/JUCE",
+      "version": "9.0.4",
+      "commit": "3fb5cbc0340758596dac39f7c8de47d562b4896e",
+      "archive_sha256": "47722c9e64f5af35b99c6d5f9605a2213e41858ff6ef1f5b9a9747b1fd310de3",
+      "profile": "windows",
+      "status": "validated-windows"
+    },
+    {
+      "name": "freertos",
+      "repository": "FreeRTOS/FreeRTOS-Kernel",
+      "version": "V11.3.3",
+      "commit": "89592801dd8b73329a7583719b7e3567b50910e5",
+      "archive_sha256": "90e2bec0de0a4c67329a57e00be8444aa1151c52cff333833f796d01e9982741",
+      "profile": "windows",
+      "status": "validated-windows"
+    },
+    {
+      "name": "lvgl",
+      "repository": "lvgl/lvgl",
+      "version": "v9.6.0",
+      "commit": "80ca777e37a2b176770726a02e07a6fb79ef0b39",
+      "archive_sha256": "3ddbd2ac5c98fbad41b7d0aa8f6026f722f5a11daaf32d0422da913ec44437da",
+      "profile": "windows",
+      "status": "validated-windows"
+    },
+    {
+      "name": "cjson",
+      "repository": "DaveGamble/cJSON",
+      "version": "v1.7.19",
+      "commit": "c859b25da02955fef659d658b8f324b5cde87be3",
+      "archive_sha256": "920293c229e7f828e5c5ca27c90804f654b72ccf7bf61ca7331600559366e2de",
+      "profile": "windows",
+      "status": "validated-windows"
+    },
+    {
+      "name": "littlefs",
+      "repository": "littlefs-project/littlefs",
+      "version": "v2.11.3",
+      "commit": "6cb4e86540eca0d9ba62500a298385c9d863c8be",
+      "archive_sha256": "3464ab6f8e1c20ae1d297bfc523a6b37c0011fb607b26bec8f28054d0ba6fce7",
+      "profile": "windows",
+      "status": "validated-windows"
+    },
+    {
+      "name": "flashdb",
+      "repository": "armink/FlashDB",
+      "version": "2.2.0",
+      "commit": "65a87640bf816effc84ca161f5254878677232b8",
+      "archive_sha256": "df5277c211b71e147fedfc9c8e065585b5e89f4333e361f75b6a38d4d141b385",
+      "profile": "windows",
+      "status": "validated-windows"
+    },
+    {
+      "name": "cherryusb",
+      "repository": "cherry-embedded/CherryUSB",
+      "version": "v1.6.1",
+      "commit": "c9625ffa773ad10b8824d1b5361bca2ccc1f3d1e",
+      "archive_sha256": "f80c7d7fd619be6d0d8b4d2a7f8157773487e02d48e23b616594ea79a1cc172f",
+      "profile": "embedded",
+      "status": "board-port-pending"
+    },
+    {
+      "name": "nanopb",
+      "repository": "nanopb/nanopb",
+      "version": "nanopb-0.4.9.2",
+      "commit": "160d4f09e5fabb2b66aa2dea32d4f38ace2c4b3f",
+      "archive_sha256": "24d04d85c732f2f41c1249865216d8469df3639560c44d23e6a822d6dab9dcf4",
+      "profile": "windows",
+      "status": "validated-windows"
+    },
+    {
+      "name": "multibutton",
+      "repository": "0x1abin/MultiButton",
+      "version": "snapshot",
+      "commit": "584881892f244a43a7c56ce005618b9d981ec10b",
+      "archive_sha256": "5e746dfb26354167af0d0e3b24e3293c999e59e4227d601d233eeab66a8fc628",
+      "profile": "windows",
+      "status": "validated-windows"
+    },
+    {
+      "name": "easylogger",
+      "repository": "armink/EasyLogger",
+      "version": "2.2.0",
+      "commit": "980eac7383e26a98837a6b42e9cefcd219b15166",
+      "archive_sha256": "876dfbe653c767583849c1bdfe7bb2ee2716d195f8f1009836f4d665c35f6780",
+      "profile": "windows",
+      "status": "validated-windows"
+    },
+    {
+      "name": "esp_dsp",
+      "repository": "espressif/esp-dsp",
+      "version": "snapshot",
+      "commit": "3c8ac0fdfec83740b783e200862c8d0c056de0ad",
+      "archive_sha256": "48e4b41d8974c1a2ec96df9c1832a2d504a710c4ae76e0a47a0905b228ed4d56",
+      "profile": "algorithms",
+      "status": "validated-reference-dot-product"
+    },
+    {
+      "name": "esp_nn",
+      "repository": "espressif/esp-nn",
+      "version": "v1.4.2",
+      "commit": "744d48deae6aa4a4d7b93b6a80f548d5298813a4",
+      "archive_sha256": "0d72642cde79631eaee7850990018c3038ae3343e0541dd4a968940b0c3459a8",
+      "profile": "algorithms",
+      "status": "validated-reference-relu6"
+    },
+    {
+      "name": "esp_gmf",
+      "repository": "espressif/esp-gmf",
+      "version": "v1.1",
+      "commit": "255fb531ddc97ff5e1e113dad97c88f70d6297be",
+      "archive_sha256": "22fa1c95cfc7beeaeb4972844e83dcfd25fc7e24ba6d9970a3d033b68284e70b",
+      "profile": "esp",
+      "status": "esp-port-pending",
+      "license_scope": "Espressif products only"
+    },
+    {
+      "name": "rtneural",
+      "repository": "jatinchowdhury18/RTNeural",
+      "version": "snapshot",
+      "commit": "95c3c0f987a6fe903e7eec71e797405dbed7caf7",
+      "archive_sha256": "6ebfdea66a4c0f9a208200f4d1834f2bd87967deb6a225e60251bdfa3c305680",
+      "profile": "inference",
+      "status": "validated-stl-dense"
+    }
+  ]
+}
