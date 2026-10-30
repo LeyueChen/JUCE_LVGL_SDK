@@ -1,9 +1,14 @@
 from pathlib import Path
 import argparse
 from config.generate import generate
+from projects import load
 root = Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser()
-parser.add_argument('--app', required=True)
+parser.add_argument('--project-dir', required=True)
+parser.add_argument('--board', default='windows_sim')
 parser.add_argument('--output', required=True)
 args = parser.parse_args()
-generate(root, Path(args.app), root / 'boards/windows_sim', Path(args.output))
+project = load(Path(args.project_dir))
+target = project.directory / 'targets' / (args.board + '.conf')
+generate(root, project.user, root / 'boards' / args.board, Path(args.output),
+         project_id=project.id, extra_fragments=[target] if target.exists() else [])

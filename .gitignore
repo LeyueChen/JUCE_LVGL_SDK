@@ -2,6 +2,10 @@
 /.local/
 /.venv/
 /out/
+/docs
+/workspaces/*.code-workspace
+/examples/*/.vscode/
+/projects/*/.vscode/
 /CMakeUserPresets.json
 __pycache__/
 *.pyc

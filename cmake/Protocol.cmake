@@ -1,3 +1,9 @@
+if(CONFIG_SDK_NANOPB STREQUAL "y")
+    # nanopb writes Python/protobuf helper files beside its generator. Keep them
+    # in this build, so two projects never write into the shared submodule.
+    set(SDK_NANOPB_GENERATOR_DIR "${CMAKE_BINARY_DIR}/host-tools/nanopb-generator")
+    file(COPY "${SDK_NANOPB_DIR}/generator/" DESTINATION "${SDK_NANOPB_GENERATOR_DIR}")
+endif()
 function(sdk_generate_protocol target source_directory output_directory)
     file(GLOB proto_files CONFIGURE_DEPENDS "${source_directory}/*.proto")
     file(GLOB proto_options CONFIGURE_DEPENDS "${source_directory}/*.options")
@@ -11,7 +17,7 @@ function(sdk_generate_protocol target source_directory output_directory)
         set(generated_c "${output_directory}/${stem}.pb.c")
         set(generated_h "${output_directory}/${stem}.pb.h")
         add_custom_command(OUTPUT "${generated_c}" "${generated_h}"
-            COMMAND "${Python_EXECUTABLE}" "${SDK_NANOPB_DIR}/generator/nanopb_generator.py"
+            COMMAND "${Python_EXECUTABLE}" "${SDK_NANOPB_GENERATOR_DIR}/nanopb_generator.py"
                 "-I${source_directory}" "-D${output_directory}" "${proto}"
             DEPENDS "${proto}" ${proto_options}
             WORKING_DIRECTORY "${source_directory}"

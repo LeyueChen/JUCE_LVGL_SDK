@@ -1,0 +1,7 @@
+{
+  "schema": 1,
+  "id": "basic",
+  "display_name": "Basic SDK example",
+  "user_dir": "user",
+  "default_board": "windows_sim"
+}

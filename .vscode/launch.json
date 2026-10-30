@@ -1,12 +1,18 @@
 {
   "version": "0.2.0",
-  "configurations": [{
-    "name": "SDK: CPU0 FreeRTOS / JUCE",
-    "type": "cppvsdbg",
-    "request": "launch",
-    "program": "${workspaceFolder}/out/windows_sim/user/Debug/bin/lvgl_juce.exe",
-    "cwd": "${workspaceFolder}/out/windows_sim/user/Debug",
-    "preLaunchTask": "SDK: build",
-    "stopAtEntry": false
-  }]
+  "configurations": [
+    {
+      "name": "SDK: selected project / CPU0 FreeRTOS",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/out/${config:sdk.project}/${config:sdk.board}/${config:sdk.configuration}/bin/lvgl_juce.exe",
+      "cwd": "${workspaceFolder}/out/${config:sdk.project}/${config:sdk.board}/${config:sdk.configuration}",
+      "args": [
+        "--data-dir",
+        "${workspaceFolder}/.local/data/${config:sdk.project}/${config:sdk.board}"
+      ],
+      "preLaunchTask": "SDK: build",
+      "stopAtEntry": false
+    }
+  ]
 }

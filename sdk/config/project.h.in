@@ -1,0 +1,3 @@
+#pragma once
+#define SDK_PROJECT_ID "@SDK_PROJECT_ID@"
+#define SDK_DATA_DIRECTORY "@SDK_DATA_DIRECTORY@"

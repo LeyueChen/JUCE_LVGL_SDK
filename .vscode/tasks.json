@@ -1,9 +1,189 @@
 {
   "version": "2.0.0",
   "tasks": [
-    {"label": "SDK: build", "type": "process", "command": "powershell.exe", "args": ["-NoProfile", "-File", "${workspaceFolder}/tools/sdk.ps1", "build"], "group": {"kind": "build", "isDefault": true}, "problemMatcher": "$msCompile"},
-    {"label": "SDK: test", "type": "process", "command": "powershell.exe", "args": ["-NoProfile", "-File", "${workspaceFolder}/tools/sdk.ps1", "test"], "problemMatcher": "$msCompile"},
-    {"label": "SDK: sync", "type": "process", "command": "powershell.exe", "args": ["-NoProfile", "-File", "${workspaceFolder}/tools/sdk.ps1", "sync"], "problemMatcher": []},
-    {"label": "SDK: menuconfig", "type": "process", "command": "powershell.exe", "args": ["-NoProfile", "-File", "${workspaceFolder}/tools/sdk.ps1", "menuconfig"], "problemMatcher": []}
+    {
+      "label": "SDK: build",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "args": [
+        "${workspaceFolder}/tools/sdk.py",
+        "build",
+        "--project",
+        "${config:sdk.project}",
+        "--board",
+        "${config:sdk.board}",
+        "--config",
+        "${config:sdk.configuration}"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$msCompile",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "SDK: clean",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "args": [
+        "${workspaceFolder}/tools/sdk.py",
+        "clean",
+        "--project",
+        "${config:sdk.project}",
+        "--board",
+        "${config:sdk.board}",
+        "--config",
+        "${config:sdk.configuration}"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "SDK: run",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "args": [
+        "${workspaceFolder}/tools/sdk.py",
+        "run",
+        "--project",
+        "${config:sdk.project}",
+        "--board",
+        "${config:sdk.board}",
+        "--config",
+        "${config:sdk.configuration}"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "SDK: test",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "args": [
+        "${workspaceFolder}/tools/sdk.py",
+        "test",
+        "--project",
+        "${config:sdk.project}",
+        "--board",
+        "${config:sdk.board}",
+        "--config",
+        "${config:sdk.configuration}"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$msCompile",
+      "group": "test"
+    },
+    {
+      "label": "SDK: configure",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "args": [
+        "${workspaceFolder}/tools/sdk.py",
+        "configure",
+        "--project",
+        "${config:sdk.project}",
+        "--board",
+        "${config:sdk.board}",
+        "--config",
+        "${config:sdk.configuration}"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "SDK: workspace",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "args": [
+        "${workspaceFolder}/tools/sdk.py",
+        "workspace",
+        "--project",
+        "${config:sdk.project}",
+        "--board",
+        "${config:sdk.board}",
+        "--config",
+        "${config:sdk.configuration}"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "SDK: menuconfig",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "args": [
+        "${workspaceFolder}/tools/sdk.py",
+        "menuconfig",
+        "--project",
+        "${config:sdk.project}",
+        "--board",
+        "${config:sdk.board}",
+        "--config",
+        "${config:sdk.configuration}"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "SDK: sync",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "args": [
+        "${workspaceFolder}/tools/sdk.py",
+        "sync"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "SDK: format",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "args": [
+        "${workspaceFolder}/tools/sdk.py",
+        "format"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "SDK: device settings",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "args": [
+        "${workspaceFolder}/tools/sdk.py",
+        "run",
+        "--project",
+        "${config:sdk.project}",
+        "--board",
+        "${config:sdk.board}",
+        "--config",
+        "${config:sdk.configuration}",
+        "--show-devices"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$msCompile"
+    }
   ]
 }

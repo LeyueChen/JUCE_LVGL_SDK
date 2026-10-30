@@ -72,3 +72,20 @@ config SDK_ESP_NN_REF
     bool "ESP-NN reference ReLU6"
     default y
 endmenu
+
+menu "Audio and MIDI"
+config SDK_AUDIO
+    bool "Audio streaming and processing"
+    default y
+config SDK_MIDI
+    bool "MIDI input and output"
+    default y
+config SDK_AUDIO_QUEUE_BLOCKS
+    int "PCM blocks in each bounded bridge queue"
+    range 2 64
+    default 16
+config SDK_MIDI_QUEUE_MESSAGES
+    int "Messages in each bounded MIDI queue"
+    range 2 256
+    default 64
+endmenu

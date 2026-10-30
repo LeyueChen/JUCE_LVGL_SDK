@@ -5,10 +5,11 @@
     "name": "win-debug",
     "displayName": "Windows / CPU0 FreeRTOS / Debug",
     "generator": "Ninja",
-    "binaryDir": "${sourceDir}/out/windows_sim/user/Debug",
+    "binaryDir": "${sourceDir}/out/basic/windows_sim/Debug",
     "cacheVariables": {
       "CMAKE_BUILD_TYPE": "Debug",
       "SDK_BOARD": "windows_sim",
+      "SDK_PROJECT_DIR": "${sourceDir}/examples/basic",
       "Python_EXECUTABLE": "${sourceDir}/.venv/Scripts/python.exe"
     }
   }],

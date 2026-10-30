@@ -5,13 +5,17 @@ from pathlib import Path
 import re
 
 
-def generate(root: Path, app: Path, board: Path, output: Path, interactive=False):
+def generate(root: Path, app: Path, board: Path, output: Path, interactive=False,
+             project_id=None, extra_fragments=()):
     import kconfiglib
     os.environ['srctree'] = str(root)
     config = kconfiglib.Kconfig(str(root / 'Kconfig'), warn_to_stderr=True)
     config.warn_assign_undef = True
-    fragments = [board / 'defconfig', app / 'app.conf']
-    local = root / '.local/config' / board.name / (app.name + '.conf')
+    # Later fragments intentionally override board/project defaults.
+    config.warn_assign_override = False
+    config.warn_assign_redun = False
+    fragments = [board / 'defconfig', app / 'app.conf', *extra_fragments]
+    local = root / '.local/config' / (project_id or app.name) / (board.name + '.conf')
     if local.exists():
         fragments.append(local)
     requested = {}

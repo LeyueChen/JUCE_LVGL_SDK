@@ -1,0 +1,42 @@
+[submodule "cherryusb"]
+	path = third_party/src/cherryusb
+	url = https://github.com/cherry-embedded/CherryUSB.git
+[submodule "cjson"]
+	path = third_party/src/cjson
+	url = https://github.com/DaveGamble/cJSON.git
+[submodule "easylogger"]
+	path = third_party/src/easylogger
+	url = https://github.com/armink/EasyLogger.git
+[submodule "esp_dsp"]
+	path = third_party/src/esp-dsp
+	url = https://github.com/espressif/esp-dsp.git
+[submodule "esp_gmf"]
+	path = third_party/src/esp-gmf
+	url = https://github.com/espressif/esp-gmf.git
+[submodule "esp_nn"]
+	path = third_party/src/esp-nn
+	url = https://github.com/espressif/esp-nn.git
+[submodule "flashdb"]
+	path = third_party/src/flashdb
+	url = https://github.com/armink/FlashDB.git
+[submodule "freertos"]
+	path = third_party/src/freertos
+	url = https://github.com/FreeRTOS/FreeRTOS-Kernel.git
+[submodule "juce"]
+	path = third_party/src/juce
+	url = https://github.com/juce-framework/JUCE.git
+[submodule "littlefs"]
+	path = third_party/src/littlefs
+	url = https://github.com/littlefs-project/littlefs.git
+[submodule "lvgl"]
+	path = third_party/src/lvgl
+	url = https://github.com/lvgl/lvgl.git
+[submodule "multibutton"]
+	path = third_party/src/multibutton
+	url = https://github.com/0x1abin/MultiButton.git
+[submodule "nanopb"]
+	path = third_party/src/nanopb
+	url = https://github.com/nanopb/nanopb.git
+[submodule "rtneural"]
+	path = third_party/src/rtneural
+	url = https://github.com/jatinchowdhury18/RTNeural.git

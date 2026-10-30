@@ -1,0 +1,119 @@
+{
+  "schema": 2,
+  "revision_source": "gitlink",
+  "dependencies": [
+    {
+      "name": "juce",
+      "repository": "juce-framework/JUCE",
+      "version": "9.0.4",
+      "profile": "windows",
+      "status": "validated-windows",
+      "path": "third_party/src/juce"
+    },
+    {
+      "name": "freertos",
+      "repository": "FreeRTOS/FreeRTOS-Kernel",
+      "version": "V11.3.3",
+      "profile": "windows",
+      "status": "validated-windows",
+      "path": "third_party/src/freertos"
+    },
+    {
+      "name": "lvgl",
+      "repository": "lvgl/lvgl",
+      "version": "v9.6.0",
+      "profile": "windows",
+      "status": "validated-windows",
+      "path": "third_party/src/lvgl"
+    },
+    {
+      "name": "cjson",
+      "repository": "DaveGamble/cJSON",
+      "version": "v1.7.19",
+      "profile": "windows",
+      "status": "validated-windows",
+      "path": "third_party/src/cjson"
+    },
+    {
+      "name": "littlefs",
+      "repository": "littlefs-project/littlefs",
+      "version": "v2.11.3",
+      "profile": "windows",
+      "status": "validated-windows",
+      "path": "third_party/src/littlefs"
+    },
+    {
+      "name": "flashdb",
+      "repository": "armink/FlashDB",
+      "version": "2.2.0",
+      "profile": "windows",
+      "status": "validated-windows",
+      "path": "third_party/src/flashdb"
+    },
+    {
+      "name": "cherryusb",
+      "repository": "cherry-embedded/CherryUSB",
+      "version": "v1.6.1",
+      "profile": "embedded",
+      "status": "board-port-pending",
+      "path": "third_party/src/cherryusb"
+    },
+    {
+      "name": "nanopb",
+      "repository": "nanopb/nanopb",
+      "version": "nanopb-0.4.9.2",
+      "profile": "windows",
+      "status": "validated-windows",
+      "path": "third_party/src/nanopb"
+    },
+    {
+      "name": "multibutton",
+      "repository": "0x1abin/MultiButton",
+      "version": "snapshot",
+      "profile": "windows",
+      "status": "validated-windows",
+      "path": "third_party/src/multibutton"
+    },
+    {
+      "name": "easylogger",
+      "repository": "armink/EasyLogger",
+      "version": "2.2.0",
+      "profile": "windows",
+      "status": "validated-windows",
+      "path": "third_party/src/easylogger"
+    },
+    {
+      "name": "esp_dsp",
+      "repository": "espressif/esp-dsp",
+      "version": "snapshot",
+      "profile": "algorithms",
+      "status": "validated-reference-dot-product",
+      "path": "third_party/src/esp-dsp"
+    },
+    {
+      "name": "esp_nn",
+      "repository": "espressif/esp-nn",
+      "version": "v1.4.2",
+      "profile": "algorithms",
+      "status": "validated-reference-relu6",
+      "path": "third_party/src/esp-nn"
+    },
+    {
+      "name": "esp_gmf",
+      "repository": "espressif/esp-gmf",
+      "version": "v1.1",
+      "profile": "esp",
+      "status": "esp-port-pending",
+      "license_scope": "Espressif products only",
+      "path": "third_party/src/esp-gmf"
+    },
+    {
+      "name": "rtneural",
+      "repository": "jatinchowdhury18/RTNeural",
+      "version": "snapshot",
+      "profile": "inference",
+      "status": "validated-stl-dense",
+      "path": "third_party/src/rtneural"
+    }
+  ]
+}

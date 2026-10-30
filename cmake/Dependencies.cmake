@@ -1,12 +1,17 @@
-file(READ "${CMAKE_SOURCE_DIR}/third_party/deps.lock.json" SDK_LOCK)
+file(READ "${CMAKE_SOURCE_DIR}/third_party/components.json" SDK_LOCK)
 string(JSON SDK_DEP_COUNT LENGTH "${SDK_LOCK}" dependencies)
 math(EXPR SDK_DEP_LAST "${SDK_DEP_COUNT} - 1")
 foreach(index RANGE 0 ${SDK_DEP_LAST})
     string(JSON name GET "${SDK_LOCK}" dependencies ${index} name)
-    string(JSON revision GET "${SDK_LOCK}" dependencies ${index} commit)
+    string(JSON source_path GET "${SDK_LOCK}" dependencies ${index} path)
     string(TOUPPER "${name}" upper)
-    set(SDK_${upper}_DIR "${CMAKE_SOURCE_DIR}/.cache/sources/${name}-${revision}")
+    set(SDK_${upper}_DIR "${CMAKE_SOURCE_DIR}/${source_path}")
 endforeach()
+
+# Direct CMake builds enforce the same gitlink/clean-source contract as the CLI.
+execute_process(COMMAND "${Python_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tools/check_dependencies.py"
+    --config "${SDK_GENERATED_DIR}/config.json" --output "${SDK_GENERATED_DIR}/dependencies.json"
+    COMMAND_ERROR_IS_FATAL ANY)
 foreach(name JUCE FREERTOS LVGL)
     if(NOT IS_DIRECTORY "${SDK_${name}_DIR}")
         message(FATAL_ERROR "Missing ${name}. Run tools/sdk.ps1 sync first.")
@@ -24,7 +29,7 @@ configure_file(sdk/config/lvgl/lv_conf.h.in "${SDK_GENERATED_DIR}/lv_conf.h" COP
 configure_file(sdk/config/flashdb/fdb_cfg.h.in "${SDK_GENERATED_DIR}/fdb_cfg.h" COPYONLY)
 configure_file(sdk/config/easylogger/elog_cfg.h.in "${SDK_GENERATED_DIR}/elog_cfg.h" COPYONLY)
 
-# Explicit, checked overlay: upstream source cache stays pristine.
+# Explicit, checked overlay: upstream submodules stay pristine.
 file(READ "${SDK_FREERTOS_DIR}/portable/MSVC-MingW/port.c" port_source)
 string(REGEX MATCHALL "SetThreadAffinityMask\\([^;]+" affinity_sites "${port_source}")
 list(LENGTH affinity_sites affinity_count)

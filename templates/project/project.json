@@ -1,0 +1,7 @@
+{
+  "schema": 1,
+  "id": "template",
+  "display_name": "Portable product template",
+  "user_dir": "user",
+  "default_board": "windows_sim"
+}
