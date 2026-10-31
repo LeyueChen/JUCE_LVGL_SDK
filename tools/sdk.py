@@ -11,7 +11,7 @@ import ide
 import projects
 import repository
 import config_check
-from toolchain import ROOT, build_env, compiler_arguments, run, tool, vs_root, validate_cache
+from toolchain import ROOT, build_env, compiler_arguments, run, tool, vs_root, validate_cache, cache_values
 
 
 def configure(args, interactive=False):
@@ -27,8 +27,8 @@ def configure(args, interactive=False):
     env = build_env() if not interactive else None
     extra, compiler = compiler_arguments(env) if not interactive else ([], None)
     if not interactive:
-        validate_cache(output, ROOT, project, compiler=compiler, ninja=tool('ninja'),
-                       python=sys.executable, cmake=tool('cmake'), configuration=args.config)
+        configured = validate_cache(output, ROOT, project, compiler=compiler, ninja=tool('ninja'),
+                                    python=sys.executable, cmake=tool('cmake'), configuration=args.config)
     extra_config = project.directory / 'targets' / (args.board + '.conf')
     generate(ROOT, project.user, board, generated, interactive, project_id=project.id,
              extra_fragments=[extra_config] if extra_config.exists() else [])
@@ -38,18 +38,37 @@ def configure(args, interactive=False):
     from check_dependencies import required
     revisions = dependencies.report(ROOT, required(values))
     ide.write_json(generated / 'dependencies.json', revisions)
-    run([tool('cmake'), '-S', ROOT, '-B', output, '-G', 'Ninja',
-         f'-DCMAKE_C_COMPILER={compiler}', f'-DCMAKE_CXX_COMPILER={compiler}',
+    # CMake compares compiler strings, not file identity. Replacing a cached
+    # short path/case variant can clear unrelated cache values on reconfigure.
+    compiler_options = [] if configured else [f'-DCMAKE_C_COMPILER={compiler}', f'-DCMAKE_CXX_COMPILER={compiler}']
+    run([tool('cmake'), '-S', ROOT, '-B', output, '-G', 'Ninja', *compiler_options,
          f'-DCMAKE_MAKE_PROGRAM={tool("ninja")}', f'-DPython_EXECUTABLE={sys.executable}',
          f'-DCMAKE_BUILD_TYPE={args.config}', f'-DSDK_PROJECT_DIR={project.directory}',
          f'-DSDK_GENERATED_DIR={generated}', f'-DSDK_BOARD={args.board}',
          f'-DBUILD_TESTING={"ON" if testing else "OFF"}',
          f'-DSDK_ENABLE_WINDOW_TESTS={"ON" if testing and args.with_window_tests else "OFF"}', *extra], env=env)
+    validate_configuration(project, output, args, values, compiler)
     if args.command == 'workspace':
         workspace = ide.generate(ROOT, project, args.board, args.config, compiler)
         ide.refresh_projects(ROOT, args.board, args.config, repair=True)
         print(f'Workspace: {workspace}')
     return project, output
+
+
+def validate_configuration(project, output, args, expected, compiler):
+    validate_cache(output, ROOT, project, compiler=compiler, ninja=tool('ninja'),
+                   python=sys.executable, cmake=tool('cmake'), configuration=args.config)
+    cached = cache_values(output)
+    if cached.get('SDK_BOARD') != args.board or \
+            Path(cached.get('SDK_GENERATED_DIR', '')).resolve() != (output / 'generated').resolve():
+        raise RuntimeError(f'{output}: CMake changed the selected board/generated directory; refusing build')
+    resolved = json.loads((output / 'generated/config.json').read_text(encoding='utf-8'))
+    if resolved != expected:
+        raise RuntimeError(f'{output}: CMake changed the selected project configuration; refusing build')
+    header = (output / 'generated/sdk_project.h').read_text(encoding='utf-8')
+    if f'"{project.id}"' not in header:
+        raise RuntimeError(f'{output}: generated project identity differs; refusing build')
+    config_check.read_database(ROOT, project, output, compiler=compiler, check_compiler=True)
 
 
 def clean(args):
