@@ -1,0 +1,20 @@
+include_guard(GLOBAL)
+
+function(sdk_configure_lvgl project_directory generated_directory)
+    get_filename_component(config_directory "${project_directory}/config" ABSOLUTE)
+    set(config_file "${config_directory}/lv_conf.h")
+    if(NOT EXISTS "${config_file}" OR IS_DIRECTORY "${config_file}")
+        message(FATAL_ERROR "Project must provide its own LVGL configuration: ${config_file}. Copy config/lv_conf.h from templates/project when creating a project.")
+    endif()
+    file(REAL_PATH "${project_directory}" project_root)
+    file(REAL_PATH "${config_file}" resolved_config)
+    cmake_path(IS_PREFIX project_root "${resolved_config}" NORMALIZE inside_project)
+    if(NOT inside_project)
+        message(FATAL_ERROR "LVGL configuration must stay inside its project: ${config_file}")
+    endif()
+    # COPYONLY preserves native LVGL macros and registers the input as a
+    # configure dependency. The generated path stays private to this build.
+    configure_file("${config_file}" "${generated_directory}/lv_conf.h" COPYONLY)
+    set(SDK_LVGL_CONFIG_FILE "${config_file}" CACHE INTERNAL "Selected project's LVGL configuration" FORCE)
+    set(SDK_LVGL_CONFIG_DIR "${config_directory}" PARENT_SCOPE)
+endfunction()

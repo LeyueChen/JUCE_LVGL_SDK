@@ -115,6 +115,7 @@ add_test(NAME project_index_sources COMMAND "${Python_EXECUTABLE}" "${CMAKE_SOUR
 add_test(NAME bootstrap_contracts COMMAND "${Python_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tests/test_bootstrap.py")
 add_test(NAME configuration_portability COMMAND "${Python_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tests/test_config_portability.py")
 add_test(NAME reconfigure_contracts COMMAND "${Python_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tests/test_reconfigure.py")
+add_test(NAME project_lvgl_configuration COMMAND "${Python_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tests/test_project_lvgl.py")
 add_test(NAME copied_user_modules COMMAND "${Python_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tests/test_modules.py" --generated "${SDK_GENERATED_DIR}")
 set_tests_properties(copied_user_modules PROPERTIES TIMEOUT 90)
 add_test(NAME repository_safety COMMAND "${Python_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tests/test_repository.py")

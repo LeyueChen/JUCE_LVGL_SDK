@@ -25,7 +25,8 @@ foreach(component cjson littlefs flashdb nanopb multibutton easylogger rtneural)
 endforeach()
 
 configure_file(sdk/config/freertos/FreeRTOSConfig.h.in "${SDK_GENERATED_DIR}/FreeRTOSConfig.h" COPYONLY)
-configure_file(sdk/config/lvgl/lv_conf.h.in "${SDK_GENERATED_DIR}/lv_conf.h" COPYONLY)
+include("${CMAKE_SOURCE_DIR}/cmake/LvglConfig.cmake")
+sdk_configure_lvgl("${SDK_PROJECT_DIR}" "${SDK_GENERATED_DIR}")
 configure_file(sdk/config/flashdb/fdb_cfg.h.in "${SDK_GENERATED_DIR}/fdb_cfg.h" COPYONLY)
 configure_file(sdk/config/easylogger/elog_cfg.h.in "${SDK_GENERATED_DIR}/elog_cfg.h" COPYONLY)
 
@@ -73,3 +74,5 @@ set(CONFIG_LV_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(CONFIG_LV_USE_THORVG OFF CACHE BOOL "" FORCE)
 set(CONFIG_LV_USE_THORVG_INTERNAL OFF CACHE BOOL "" FORCE)
 add_subdirectory("${SDK_LVGL_DIR}" "${CMAKE_BINARY_DIR}/lvgl" EXCLUDE_FROM_ALL)
+# Relative includes inside the project's lv_conf.h resolve in its config tree.
+target_include_directories(lvgl PUBLIC "$<BUILD_INTERFACE:${SDK_LVGL_CONFIG_DIR}>")

@@ -6,6 +6,10 @@
 
 当前 audio 项目位于 projects/audio，内部 rakure_ea 和 rakure_gui 为独立模块，各自管理 CMakeLists、源码、公开头文件和依赖。user/CMakeLists 自动发现并组合已注册模块。
 
+每个项目必须提供自己的 config/lv_conf.h，维护原生 LVGL 宏；audio 的文件为 projects/audio/config/lv_conf.h。新项目从 templates/project/config/lv_conf.h 复制初始内容，之后独立维护。构建不会重写项目源配置，也不会在缺失时使用 SDK 或其他项目的配置。所选文件复制到当前项目的 generated/lv_conf.h，config 目录接入编译和索引；修改后重新构建会自动更新。分辨率等 CONFIG_SDK_* 选项继续在 user/app.conf 中维护。
+
+项目配置使用当前 LVGL v9.6.0 的完整官方 lv_conf_template.h，保留全部选项和注释。初始内容启用配置，并保留 ARGB8888、16 ms 刷新周期和 SDK 内存映射等现有设置；各项目在对应原生选项处独立修改。
+
 ```powershell
 .\sdk.cmd setup --project audio
 .\.venv\Scripts\python.exe tools/sdk.py projects

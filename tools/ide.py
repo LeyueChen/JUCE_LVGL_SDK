@@ -55,8 +55,8 @@ def split_command(command):
 def index_paths(root: Path, project: Project, board, configuration, compiler=None):
     output = output_dir(root, project, board, configuration)
     generated = output / 'generated'
-    includes = {project.user, root / 'sdk/include', generated, generated / 'protocol'}
-    browse = {project.user, root / 'sdk/include', generated}
+    includes = {project.user, project.directory / 'config', root / 'sdk/include', generated, generated / 'protocol'}
+    browse = {project.user, project.directory / 'config', root / 'sdk/include', generated}
     database = output / 'compile_commands.json'
     if database.exists():
         from config_check import read_database

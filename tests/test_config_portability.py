@@ -49,6 +49,7 @@ class ConfigurationPortability(unittest.TestCase):
                   'CMAKE_CACHEFILE_DIR': self.output, 'CMAKE_C_COMPILER': self.compiler,
                   'CMAKE_CXX_COMPILER': self.compiler, 'CMAKE_MAKE_PROGRAM': self.ninja,
                   'CMAKE_COMMAND': self.ninja,
+                  'SDK_LVGL_CONFIG_FILE': self.project.directory / 'config/lv_conf.h',
                   'Python_EXECUTABLE': self.python, 'CMAKE_GENERATOR': 'Ninja', 'CMAKE_BUILD_TYPE': 'Debug'}
         (self.output / 'CMakeCache.txt').write_text(''.join(f'{key}:STRING={value}\n' for key, value in values.items()))
         ide.refresh_projects(self.root)

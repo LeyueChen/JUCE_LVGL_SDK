@@ -121,6 +121,8 @@ def check(root, *, generated=True, board=None, configuration=None):
                 if task['label'].startswith('SDK:'):
                     require(task['command'].startswith('${workspaceFolder}/') and task['command'].endswith('/sdk.cmd'), path, 'SDK task must use the workspace-relative sdk.cmd entry; regenerate this workspace')
     for project in registered:
+        if generated:
+            projects.lvgl_config(project)
         source = project.directory / '.vscode/c_cpp_properties.json'
         if source.exists():
             names = [item['name'] for item in read_jsonc(source)['configurations']]

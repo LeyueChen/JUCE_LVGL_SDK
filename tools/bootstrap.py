@@ -164,6 +164,9 @@ def ide_ready(root, project, board, configuration, *, tools=None):
     if not toolchain.validate_cache(output, root, project, compiler=tools.get('compiler'), ninja=tools.get('ninja'),
                                     python=root / '.venv/Scripts/python.exe', cmake=tools.get('cmake'), configuration=configuration):
         return False
+    selected_config = toolchain.cache_values(output).get('SDK_LVGL_CONFIG_FILE')
+    if not selected_config or not toolchain.same_path(selected_config, projects.lvgl_config(project)):
+        return False
     properties = root / '.vscode/c_cpp_properties.json'
     workspace = root / 'workspaces' / f'{project.id}-{board}-{configuration.lower()}.code-workspace'
     if not all(path.is_file() for path in (properties, workspace, output / 'compile_commands.json')):
@@ -235,6 +238,7 @@ def main(argv=None):
         return 0 if status['ready'] else 1
     args.project = args.project or default_project(ROOT)
     project = projects.resolve(ROOT, args.project)
+    projects.lvgl_config(project)
     if args.check and not status['ready']:
         print(json.dumps({'tools': tools, 'project': project.id, 'environment': status, 'ready': False}, indent=2))
         return 1

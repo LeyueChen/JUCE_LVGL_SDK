@@ -63,6 +63,15 @@ def data_dir(root: Path, project: Project, board: str) -> Path:
     return root / '.local/data' / project.id / board
 
 
+def lvgl_config(project: Project) -> Path:
+    path = project.directory / 'config/lv_conf.h'
+    if not path.is_file():
+        raise RuntimeError(f'{path}: project must provide its own LVGL configuration; copy config/lv_conf.h from templates/project')
+    if not path.resolve().is_relative_to(project.directory):
+        raise RuntimeError(f'{path}: LVGL configuration must stay inside its project')
+    return path
+
+
 def scaffold(root: Path, name: str, destination: Path | None = None) -> Project:
     if not valid_id(name):
         raise RuntimeError('Project names use lowercase letters, digits, hyphens and underscores')

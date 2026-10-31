@@ -76,10 +76,12 @@ LVGL_JUCE/
 ├─ examples/basic/
 │  ├─ project.json
 │  ├─ .vscode/c_cpp_properties.json # 随项目跟踪的 IDE 配置源
+│  ├─ config/lv_conf.h             # 示例独立的原生 LVGL 配置
 │  └─ user/                        # SDK 的可运行示例
 ├─ projects/<product>/                 # 新应用/产品项目，audio 为音频演示
 │  ├─ project.json
 │  ├─ .vscode/c_cpp_properties.json # 项目自己的 IDE 配置源，随产品分支维护
+│  ├─ config/lv_conf.h             # 项目独立的原生 LVGL 配置，必须提供
 │  ├─ targets/windows_sim.conf     # 产品对平台的配置覆盖，可选
 │  └─ user/                        # 可移植业务、UI、协议和核职责
 ├─ templates/project/              # 创建产品时复制的模板
@@ -108,6 +110,12 @@ LVGL_JUCE/
 Git 跟踪 projects/examples 下的 `.vscode/c_cpp_properties.json` 和模板配置，继续忽略同目录其他本机文件；根 `.vscode/c_cpp_properties.json` 为本地生成结果，不跟踪。切换项目或刷新索引时无需提交根文件中的项目列表，`workspaces/*.code-workspace`、out 和 .local 继续只保存在本地。
 
 配置覆盖顺序为：板卡 `defconfig` → `user/app.conf` → `targets/<board>.conf` → `.local/config/<id>/<board>.conf`。第三方配置头和运行时参数由 SDK 映射；用户区域不管理依赖下载或平台头文件路径。
+
+每个项目独立维护 `config/lv_conf.h`，直接配置 LVGL 的 `LV_*` 宏。audio 使用 `projects/audio/config/lv_conf.h`，basic 使用 `examples/basic/config/lv_conf.h`；新项目从 `templates/project/config/lv_conf.h` 复制初始配置，创建后互不影响。缺少配置会明确报错，不回退到 SDK 或其他项目。原 SDK 的 `sdk/config/lvgl/lv_conf.h.in` 已迁入项目模板。
+
+这些文件以当前 submodule 的 `third_party/src/lvgl/lv_conf_template.h`（v9.6.0）完整模板为基础，保留全部选项、分组和说明。启用最外层内容开关，并在原生选项位置保留现有 Windows 配置：ARGB8888、16 ms 刷新周期、内置内存分配及关闭 ThorVG。`sdk_config.h` 在非汇编环境中引入，`LV_MEM_SIZE` 继续引用 `CONFIG_SDK_LVGL_HEAP_BYTES`；其余原生选项可由各项目独立修改。
+
+构建将所选配置原样复制到该项目的 `out/<id>/<board>/<config>/generated/lv_conf.h`，并跟踪源文件变化；修改配置后重新构建即可生效。项目的 config 目录同时接入 LVGL 公共头文件搜索路径和独立索引，可在配置头中引用该目录下的其他头文件。修改项目源配置，生成文件由构建维护。分辨率等 `CONFIG_SDK_*` 选项继续放在 `user/app.conf`，通过生成的 `sdk_config.h` 提供给 LVGL 配置。
 
 ## Git 分支和 submodule
 

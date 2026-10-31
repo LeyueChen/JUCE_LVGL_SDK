@@ -18,6 +18,7 @@ def configure(args, interactive=False):
     from config.generate import generate
     config_check.check(ROOT, generated=False, board=args.board, configuration=args.config)
     project = projects.resolve(ROOT, args.project)
+    projects.lvgl_config(project)
     board = ROOT / 'boards' / args.board
     output = projects.output_dir(ROOT, project, args.board, args.config)
     testing = args.command == 'test'
