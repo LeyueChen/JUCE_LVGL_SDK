@@ -41,6 +41,7 @@ def configure(args, interactive=False):
          f'-DSDK_ENABLE_WINDOW_TESTS={"ON" if testing and args.with_window_tests else "OFF"}', *extra], env=env)
     if args.command == 'workspace':
         workspace = ide.generate(ROOT, project, args.board, args.config, compiler)
+        ide.refresh_projects(ROOT, args.board, args.config)
         print(f'Workspace: {workspace}')
     return project, output
 
@@ -66,7 +67,7 @@ def new_project(args):
         raise RuntimeError('Select a reviewed new-layout SDK tag using --sdk-ref; sdk/v0.1.0 uses the old layout')
     if not re.fullmatch(r'sdk/v[0-9]+\.[0-9]+\.[0-9]+(?:[-.][a-zA-Z0-9.-]+)?', args.sdk_ref):
         raise RuntimeError('Expected an SDK release tag')
-    if not re.fullmatch(r'[a-z0-9]+(?:-[a-z0-9]+)*', args.name):
+    if not projects.valid_id(args.name):
         raise RuntimeError('Invalid project name')
     status = subprocess.check_output(['git', '-C', str(ROOT), 'status', '--porcelain'], text=True)
     if status.strip():
@@ -80,6 +81,7 @@ def new_project(args):
     repository.switch(ROOT, args.sdk_ref, create=f'project/{args.name}/main')
     project = projects.scaffold(ROOT, args.name)
     workspace = ide.generate(ROOT, project)
+    ide.refresh_projects(ROOT)
     print(f'Created {project.directory}\nOpen {workspace}; product changes are ready for review and commit.')
 
 
@@ -118,6 +120,9 @@ def main():
     sub = parser.add_subparsers(dest='command', required=True)
     sub.add_parser('doctor')
     sub.add_parser('projects')
+    refresh = sub.add_parser('refresh-projects', help='Refresh root C/C++ project configurations without configuring or building')
+    refresh.add_argument('--board', choices=['windows_sim'])
+    refresh.add_argument('--config', choices=['Debug', 'Release'])
     sub.add_parser('release-check', help='Read-only audit before a manual SDK release')
     switch = sub.add_parser('switch', help='Switch a branch while protecting ignored local docs')
     switch.add_argument('ref')
@@ -147,6 +152,9 @@ def main():
         print(json.dumps({'python': sys.executable, 'cmake': tool('cmake'), 'ninja': tool('ninja'), 'clang-format': tool('clang-format'), 'visual_studio': str(vs_root())}, indent=2))
     elif args.command == 'projects':
         print(json.dumps([{'id': project.id, 'path': project.directory.relative_to(ROOT).as_posix()} for project in projects.discover(ROOT)], indent=2))
+    elif args.command == 'refresh-projects':
+        names = ide.refresh_projects(ROOT, args.board, args.config)
+        print('C/C++ project configurations: ' + ', '.join(names))
     elif args.command == 'release-check':
         print(json.dumps(repository.release_check(ROOT), indent=2))
     elif args.command == 'switch':

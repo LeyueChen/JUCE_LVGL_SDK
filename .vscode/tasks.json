@@ -9,7 +9,7 @@
         "${workspaceFolder}/tools/sdk.py",
         "build",
         "--project",
-        "${config:sdk.project}",
+        "${command:cpptools.activeConfigName}",
         "--board",
         "${config:sdk.board}",
         "--config",
@@ -32,7 +32,7 @@
         "${workspaceFolder}/tools/sdk.py",
         "clean",
         "--project",
-        "${config:sdk.project}",
+        "${command:cpptools.activeConfigName}",
         "--board",
         "${config:sdk.board}",
         "--config",
@@ -51,7 +51,7 @@
         "${workspaceFolder}/tools/sdk.py",
         "run",
         "--project",
-        "${config:sdk.project}",
+        "${command:cpptools.activeConfigName}",
         "--board",
         "${config:sdk.board}",
         "--config",
@@ -70,7 +70,7 @@
         "${workspaceFolder}/tools/sdk.py",
         "test",
         "--project",
-        "${config:sdk.project}",
+        "${command:cpptools.activeConfigName}",
         "--board",
         "${config:sdk.board}",
         "--config",
@@ -90,7 +90,7 @@
         "${workspaceFolder}/tools/sdk.py",
         "configure",
         "--project",
-        "${config:sdk.project}",
+        "${command:cpptools.activeConfigName}",
         "--board",
         "${config:sdk.board}",
         "--config",
@@ -109,7 +109,7 @@
         "${workspaceFolder}/tools/sdk.py",
         "workspace",
         "--project",
-        "${config:sdk.project}",
+        "${command:cpptools.activeConfigName}",
         "--board",
         "${config:sdk.board}",
         "--config",
@@ -128,7 +128,7 @@
         "${workspaceFolder}/tools/sdk.py",
         "menuconfig",
         "--project",
-        "${config:sdk.project}",
+        "${command:cpptools.activeConfigName}",
         "--board",
         "${config:sdk.board}",
         "--config",
@@ -173,7 +173,7 @@
         "${workspaceFolder}/tools/sdk.py",
         "run",
         "--project",
-        "${config:sdk.project}",
+        "${command:cpptools.activeConfigName}",
         "--board",
         "${config:sdk.board}",
         "--config",
@@ -184,6 +184,23 @@
         "cwd": "${workspaceFolder}"
       },
       "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "SDK: refresh projects",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "args": [
+        "${workspaceFolder}/tools/sdk.py",
+        "refresh-projects",
+        "--board",
+        "${config:sdk.board}",
+        "--config",
+        "${config:sdk.configuration}"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
     }
   ]
 }

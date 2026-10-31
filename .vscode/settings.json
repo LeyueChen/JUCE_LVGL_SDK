@@ -1,8 +1,5 @@
 {
   "cmake.configureOnOpen": false,
-  "C_Cpp.default.compileCommands": [
-    "${workspaceFolder}/out/basic/windows_sim/Debug/compile_commands.json"
-  ],
   "python.defaultInterpreterPath": "${workspaceFolder}/.venv/Scripts/python.exe",
   "files.exclude": {
     "**/.git": false,
@@ -15,29 +12,10 @@
     ".venv/**": true,
     "out/**": true
   },
-  "sdk.project": "basic",
   "sdk.board": "windows_sim",
   "sdk.configuration": "Debug",
   "C_Cpp.default.configurationProvider": "",
-  "C_Cpp.default.includePath": [
-    "${workspaceFolder}/examples/basic/user",
-    "${workspaceFolder}/sdk/include",
-    "${workspaceFolder}/out/basic/windows_sim/Debug/generated",
-    "${workspaceFolder}/third_party/src/lvgl",
-    "${workspaceFolder}/third_party/src/freertos/include",
-    "${workspaceFolder}/third_party/src/freertos/portable/MSVC-MingW"
-  ],
-  "C_Cpp.default.browse.path": [
-    "${workspaceFolder}/examples/basic/user",
-    "${workspaceFolder}/sdk",
-    "${workspaceFolder}/platforms/windows",
-    "${workspaceFolder}/out/basic/windows_sim/Debug/generated",
-    "${workspaceFolder}/third_party/src/lvgl/src",
-    "${workspaceFolder}/third_party/src/freertos/include"
-  ],
   "C_Cpp.default.browse.limitSymbolsToIncludedHeaders": true,
-  "C_Cpp.default.browse.databaseFilename": "${workspaceFolder}/.local/intellisense/basic/windows_sim/Debug/browse.vc.db",
-  "C_Cpp.intelliSenseCachePath": "${workspaceFolder}/.local/intellisense/basic/windows_sim/Debug/ipch",
   "C_Cpp.clang_format_style": "file",
   "C_Cpp.formatting": "clangFormat",
   "[c]": {
@@ -47,5 +25,6 @@
   "[cpp]": {
     "editor.defaultFormatter": "ms-vscode.cpptools",
     "editor.formatOnSave": true
-  }
+  },
+  "C_Cpp.intelliSenseCacheSize": 0
 }

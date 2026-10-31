@@ -6,6 +6,10 @@ import re
 import shutil
 
 
+def valid_id(name):
+    return isinstance(name, str) and re.fullmatch(r'[a-z0-9]+(?:[-_][a-z0-9]+)*', name) is not None
+
+
 @dataclass(frozen=True)
 class Project:
     id: str
@@ -18,7 +22,7 @@ def load(directory: Path) -> Project:
     directory = directory.resolve()
     metadata = json.loads((directory / 'project.json').read_text(encoding='utf-8'))
     name = metadata.get('id', '')
-    if metadata.get('schema') != 1 or not re.fullmatch(r'[a-z0-9]+(?:-[a-z0-9]+)*', name):
+    if metadata.get('schema') != 1 or not valid_id(name):
         raise RuntimeError(f'Invalid project metadata: {directory}')
     user = (directory / metadata.get('user_dir', 'user')).resolve()
     if not user.is_relative_to(directory) or not (user / 'app.conf').is_file():
@@ -60,8 +64,8 @@ def data_dir(root: Path, project: Project, board: str) -> Path:
 
 
 def scaffold(root: Path, name: str, destination: Path | None = None) -> Project:
-    if not re.fullmatch(r'[a-z0-9]+(?:-[a-z0-9]+)*', name):
-        raise RuntimeError('Project names use lowercase letters, digits and hyphens')
+    if not valid_id(name):
+        raise RuntimeError('Project names use lowercase letters, digits, hyphens and underscores')
     if name in [project.id for project in discover(root)]:
         raise RuntimeError('Project ID already exists')
     destination = (destination or root / 'projects' / name).resolve()

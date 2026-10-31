@@ -16,10 +16,13 @@ python -m venv .venv
 
 VS Code 任务直接调用仓库 `.venv` 中的 Python，不依赖 PowerShell 脚本执行策略。仓库还保留 `tools/bootstrap.ps1` 和 `tools/sdk.ps1` 作为方便入口，使用它们时遵循本机现有策略。
 
-在 VS Code 打开生成的 `workspaces/basic-windows_sim-debug.code-workspace`。`Ctrl+Shift+B` 构建，`F5` 调试；任务列表提供 `SDK: build`、`SDK: clean`、`SDK: run`、`SDK: test`、`SDK: menuconfig`。直接打开仓库文件夹时，根 `.vscode` 默认选择 basic 示例。
+可以直接在 VS Code 打开仓库文件夹，在 C/C++ 配置选择器中选择 `audio` 或 `basic`，然后执行 `SDK: run`，自动配置、编译并运行该项目；`Ctrl+Shift+B` 构建，`F5` 调试，也使用当前 C/C++ 配置名。首次替换旧配置后先手动选择一次 `audio`。任务列表还提供 `SDK: clean`、`SDK: test`、`SDK: menuconfig` 和 `SDK: refresh projects`。
+
+也可以打开生成的 `workspaces/basic-windows_sim-debug.code-workspace` 或 audio 专属工作区，使用固定到该项目的索引、任务和调试入口。
 
 ```powershell
 .\.venv\Scripts\python.exe tools/sdk.py projects
+.\.venv\Scripts\python.exe tools/sdk.py refresh-projects
 .\.venv\Scripts\python.exe tools/sdk.py build --project basic
 .\.venv\Scripts\python.exe tools/sdk.py clean --project basic
 .\.venv\Scripts\python.exe tools/sdk.py run --project basic
@@ -28,7 +31,7 @@ VS Code 任务直接调用仓库 `.venv` 中的 Python，不依赖 PowerShell �
 .\.venv\Scripts\python.exe tools/sdk.py format --check
 ```
 
-普通构建使用 `BUILD_TESTING=OFF`；`test` 在独立的 `out/<id>/<board>/Debug-tests`（或 `Release-tests`）中编译验证程序。`workspace` 显式生成 IDE 配置，保留用户自定义的 `c_cpp_properties.json`；build/clean/run 不改写索引设置。
+普通构建使用 `BUILD_TESTING=OFF`；`test` 在独立的 `out/<id>/<board>/Debug-tests`（或 `Release-tests`）中编译验证程序。`workspace` 显式生成项目工作区并刷新根目录配置列表；`refresh-projects` 只读取工程元数据和已有编译数据库来刷新 IDE 配置，不触发构建。build/clean/run 不改写索引设置。
 
 已通过且与本次改动无关的测试不重复运行。平时按改动选择 `--only` 中的精确测试名；不指定时运行当前已注册的测试。`--list` 仅配置并列出测试，不构建或启动测试程序。测试名不存在或未启用时直接报错，避免错误筛选后误跑其他测试。
 
@@ -52,7 +55,7 @@ LVGL_JUCE/
 ├─ .gitmodules                     # 14 个直接依赖的上游 URL
 ├─ .clang-format                   # 用户提供的格式规则
 ├─ AGENTS.md                       # 先计划、确认后执行的工作流
-├─ .vscode/                        # basic 默认任务、调试、C/C++ 索引入口
+├─ .vscode/                        # 以当前 C/C++ 配置名选择项目的任务、调试和索引
 ├─ sdk/                            # 公共接口、服务、OSAL、第三方配置与适配
 ├─ platforms/windows/              # JUCE、FreeRTOS port、宿主桥接及设备
 ├─ boards/windows_sim/             # 板级默认配置和核拓扑
@@ -78,7 +81,11 @@ LVGL_JUCE/
    └─ intellisense/<id>/<board>/<config>/ # browse.vc.db、ipch
 ```
 
-每个 `project.json` 声明唯一 ID 和 `user_dir`。同一分支可包含多个项目，使用 `--project <id>` 选择；也可使用仓库内含 `project.json` 的目录。仅选中的 user 目录进入编译。
+每个 `project.json` 声明唯一 ID 和 `user_dir`。ID 支持小写字母、数字，以及单个连字符或下划线连接的名称，例如 `rakure_gui`。同一分支可包含多个项目，使用 `--project <id>` 选择；也可使用仓库内含 `project.json` 的目录。仅选中的 user 目录进入编译。
+
+根目录 `.vscode/c_cpp_properties.json` 中的 SDK 配置名与项目 ID 一致。任务和 F5 通过 `${command:cpptools.activeConfigName}` 获取当前名称，构建目录、运行数据和符号数据库分别使用该 ID，根目录不再用 `sdk.project` 另选一次项目。各配置只引用自身的编译数据库、生成头文件和浏览目录。根目录符号数据库使用 `.local/intellisense/<id>/<board>/<config>/root/browse.vc.db`，与专属工作区的数据库分开，便于同时打开两种工作区。根目录多配置模式关闭持久化 ipch 缓存，避免多个项目共用该缓存；专属工作区继续使用各自的 ipch 路径。
+
+新增完整的 `projects/rakure_gui/project.json`、`user/app.conf` 和 user 构建入口后，执行 **SDK: refresh projects**，即可在 C/C++ 配置选择器中选择 `rakure_gui` 并使用 SDK: run。单独的音频 GUI 模块不是产品工程，需要这些项目元数据和构建入口。编译数据库尚不存在时可先执行当前项目的 SDK: configure，再刷新；改变板卡/Debug/Release 后也应刷新。带 `sdkManaged=root-project` 标记的索引字段由工具维护；已有自定义编译选项、其他配置和非 SDK 用户设置会保留。
 
 每个产品工作区只打开对应项目目录，生成自己的 `.vscode/c_cpp_properties.json`，通过 `${default}` 继承工作区的编译数据库、限定浏览路径与符号缓存。SDK/第三方函数通过该项目实际编译的源文件跳转，不扫描全部产品。项目工作区还携带独立的 build/clean/run 和 F5 路径，避免根文件夹设置覆盖。详见 [工作区说明](workspaces/README.md)。
 
