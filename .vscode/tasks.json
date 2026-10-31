@@ -3,10 +3,9 @@
   "tasks": [
     {
       "label": "SDK: build",
-      "type": "process",
-      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "type": "shell",
+      "command": "${workspaceFolder}/sdk.cmd",
       "args": [
-        "${workspaceFolder}/tools/sdk.py",
         "build",
         "--project",
         "${command:cpptools.activeConfigName}",
@@ -16,7 +15,14 @@
         "${config:sdk.configuration}"
       ],
       "options": {
-        "cwd": "${workspaceFolder}"
+        "cwd": "${workspaceFolder}",
+        "shell": {
+          "executable": "${env:ComSpec}",
+          "args": [
+            "/d",
+            "/c"
+          ]
+        }
       },
       "problemMatcher": "$msCompile",
       "group": {
@@ -26,10 +32,9 @@
     },
     {
       "label": "SDK: clean",
-      "type": "process",
-      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "type": "shell",
+      "command": "${workspaceFolder}/sdk.cmd",
       "args": [
-        "${workspaceFolder}/tools/sdk.py",
         "clean",
         "--project",
         "${command:cpptools.activeConfigName}",
@@ -39,16 +44,22 @@
         "${config:sdk.configuration}"
       ],
       "options": {
-        "cwd": "${workspaceFolder}"
+        "cwd": "${workspaceFolder}",
+        "shell": {
+          "executable": "${env:ComSpec}",
+          "args": [
+            "/d",
+            "/c"
+          ]
+        }
       },
       "problemMatcher": []
     },
     {
       "label": "SDK: run",
-      "type": "process",
-      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "type": "shell",
+      "command": "${workspaceFolder}/sdk.cmd",
       "args": [
-        "${workspaceFolder}/tools/sdk.py",
         "run",
         "--project",
         "${command:cpptools.activeConfigName}",
@@ -58,16 +69,22 @@
         "${config:sdk.configuration}"
       ],
       "options": {
-        "cwd": "${workspaceFolder}"
+        "cwd": "${workspaceFolder}",
+        "shell": {
+          "executable": "${env:ComSpec}",
+          "args": [
+            "/d",
+            "/c"
+          ]
+        }
       },
       "problemMatcher": "$msCompile"
     },
     {
       "label": "SDK: test",
-      "type": "process",
-      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "type": "shell",
+      "command": "${workspaceFolder}/sdk.cmd",
       "args": [
-        "${workspaceFolder}/tools/sdk.py",
         "test",
         "--project",
         "${command:cpptools.activeConfigName}",
@@ -77,17 +94,23 @@
         "${config:sdk.configuration}"
       ],
       "options": {
-        "cwd": "${workspaceFolder}"
+        "cwd": "${workspaceFolder}",
+        "shell": {
+          "executable": "${env:ComSpec}",
+          "args": [
+            "/d",
+            "/c"
+          ]
+        }
       },
       "problemMatcher": "$msCompile",
       "group": "test"
     },
     {
       "label": "SDK: configure",
-      "type": "process",
-      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "type": "shell",
+      "command": "${workspaceFolder}/sdk.cmd",
       "args": [
-        "${workspaceFolder}/tools/sdk.py",
         "configure",
         "--project",
         "${command:cpptools.activeConfigName}",
@@ -97,16 +120,22 @@
         "${config:sdk.configuration}"
       ],
       "options": {
-        "cwd": "${workspaceFolder}"
+        "cwd": "${workspaceFolder}",
+        "shell": {
+          "executable": "${env:ComSpec}",
+          "args": [
+            "/d",
+            "/c"
+          ]
+        }
       },
       "problemMatcher": []
     },
     {
       "label": "SDK: workspace",
-      "type": "process",
-      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "type": "shell",
+      "command": "${workspaceFolder}/sdk.cmd",
       "args": [
-        "${workspaceFolder}/tools/sdk.py",
         "workspace",
         "--project",
         "${command:cpptools.activeConfigName}",
@@ -116,16 +145,22 @@
         "${config:sdk.configuration}"
       ],
       "options": {
-        "cwd": "${workspaceFolder}"
+        "cwd": "${workspaceFolder}",
+        "shell": {
+          "executable": "${env:ComSpec}",
+          "args": [
+            "/d",
+            "/c"
+          ]
+        }
       },
       "problemMatcher": []
     },
     {
       "label": "SDK: menuconfig",
-      "type": "process",
-      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "type": "shell",
+      "command": "${workspaceFolder}/sdk.cmd",
       "args": [
-        "${workspaceFolder}/tools/sdk.py",
         "menuconfig",
         "--project",
         "${command:cpptools.activeConfigName}",
@@ -135,42 +170,60 @@
         "${config:sdk.configuration}"
       ],
       "options": {
-        "cwd": "${workspaceFolder}"
+        "cwd": "${workspaceFolder}",
+        "shell": {
+          "executable": "${env:ComSpec}",
+          "args": [
+            "/d",
+            "/c"
+          ]
+        }
       },
       "problemMatcher": []
     },
     {
       "label": "SDK: sync",
-      "type": "process",
-      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "type": "shell",
+      "command": "${workspaceFolder}/sdk.cmd",
       "args": [
-        "${workspaceFolder}/tools/sdk.py",
         "sync"
       ],
       "options": {
-        "cwd": "${workspaceFolder}"
+        "cwd": "${workspaceFolder}",
+        "shell": {
+          "executable": "${env:ComSpec}",
+          "args": [
+            "/d",
+            "/c"
+          ]
+        }
       },
       "problemMatcher": []
     },
     {
       "label": "SDK: format",
-      "type": "process",
-      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "type": "shell",
+      "command": "${workspaceFolder}/sdk.cmd",
       "args": [
-        "${workspaceFolder}/tools/sdk.py",
         "format"
       ],
       "options": {
-        "cwd": "${workspaceFolder}"
+        "cwd": "${workspaceFolder}",
+        "shell": {
+          "executable": "${env:ComSpec}",
+          "args": [
+            "/d",
+            "/c"
+          ]
+        }
       },
       "problemMatcher": []
     },
     {
       "label": "SDK: device settings",
-      "type": "process",
-      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "type": "shell",
+      "command": "${workspaceFolder}/sdk.cmd",
       "args": [
-        "${workspaceFolder}/tools/sdk.py",
         "run",
         "--project",
         "${command:cpptools.activeConfigName}",
@@ -181,16 +234,22 @@
         "--show-devices"
       ],
       "options": {
-        "cwd": "${workspaceFolder}"
+        "cwd": "${workspaceFolder}",
+        "shell": {
+          "executable": "${env:ComSpec}",
+          "args": [
+            "/d",
+            "/c"
+          ]
+        }
       },
       "problemMatcher": "$msCompile"
     },
     {
       "label": "SDK: refresh projects",
-      "type": "process",
-      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "type": "shell",
+      "command": "${workspaceFolder}/sdk.cmd",
       "args": [
-        "${workspaceFolder}/tools/sdk.py",
         "refresh-projects",
         "--board",
         "${config:sdk.board}",
@@ -198,7 +257,56 @@
         "${config:sdk.configuration}"
       ],
       "options": {
-        "cwd": "${workspaceFolder}"
+        "cwd": "${workspaceFolder}",
+        "shell": {
+          "executable": "${env:ComSpec}",
+          "args": [
+            "/d",
+            "/c"
+          ]
+        }
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "SDK: setup",
+      "type": "shell",
+      "command": "${workspaceFolder}/sdk.cmd",
+      "args": [
+        "setup",
+        "--board",
+        "${config:sdk.board}",
+        "--config",
+        "${config:sdk.configuration}"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "shell": {
+          "executable": "${env:ComSpec}",
+          "args": [
+            "/d",
+            "/c"
+          ]
+        }
+      },
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "SDK: check config",
+      "type": "shell",
+      "command": "${workspaceFolder}/sdk.cmd",
+      "args": [
+        "check-config"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "shell": {
+          "executable": "${env:ComSpec}",
+          "args": [
+            "/d",
+            "/c"
+          ]
+        }
       },
       "problemMatcher": []
     }

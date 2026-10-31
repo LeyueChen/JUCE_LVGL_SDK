@@ -10,11 +10,13 @@ import dependencies
 import ide
 import projects
 import repository
-from toolchain import ROOT, build_env, compiler_arguments, run, tool, vs_root
+import config_check
+from toolchain import ROOT, build_env, compiler_arguments, run, tool, vs_root, validate_cache
 
 
 def configure(args, interactive=False):
     from config.generate import generate
+    config_check.check(ROOT, generated=False, board=args.board, configuration=args.config)
     project = projects.resolve(ROOT, args.project)
     board = ROOT / 'boards' / args.board
     output = projects.output_dir(ROOT, project, args.board, args.config)
@@ -22,6 +24,11 @@ def configure(args, interactive=False):
     if testing:
         output = output.with_name(output.name + '-tests')
     generated = output / 'generated'
+    env = build_env() if not interactive else None
+    extra, compiler = compiler_arguments(env) if not interactive else ([], None)
+    if not interactive:
+        validate_cache(output, ROOT, project, compiler=compiler, ninja=tool('ninja'),
+                       python=sys.executable, cmake=tool('cmake'), configuration=args.config)
     extra_config = project.directory / 'targets' / (args.board + '.conf')
     generate(ROOT, project.user, board, generated, interactive, project_id=project.id,
              extra_fragments=[extra_config] if extra_config.exists() else [])
@@ -31,9 +38,8 @@ def configure(args, interactive=False):
     from check_dependencies import required
     revisions = dependencies.report(ROOT, required(values))
     ide.write_json(generated / 'dependencies.json', revisions)
-    env = build_env()
-    extra, compiler = compiler_arguments(env)
     run([tool('cmake'), '-S', ROOT, '-B', output, '-G', 'Ninja',
+         f'-DCMAKE_C_COMPILER={compiler}', f'-DCMAKE_CXX_COMPILER={compiler}',
          f'-DCMAKE_MAKE_PROGRAM={tool("ninja")}', f'-DPython_EXECUTABLE={sys.executable}',
          f'-DCMAKE_BUILD_TYPE={args.config}', f'-DSDK_PROJECT_DIR={project.directory}',
          f'-DSDK_GENERATED_DIR={generated}', f'-DSDK_BOARD={args.board}',
@@ -41,7 +47,7 @@ def configure(args, interactive=False):
          f'-DSDK_ENABLE_WINDOW_TESTS={"ON" if testing and args.with_window_tests else "OFF"}', *extra], env=env)
     if args.command == 'workspace':
         workspace = ide.generate(ROOT, project, args.board, args.config, compiler)
-        ide.refresh_projects(ROOT, args.board, args.config)
+        ide.refresh_projects(ROOT, args.board, args.config, repair=True)
         print(f'Workspace: {workspace}')
     return project, output
 
@@ -54,6 +60,7 @@ def clean(args):
     if not (output / 'CMakeCache.txt').exists():
         print('No configured build to clean')
         return
+    validate_cache(output, ROOT, project, python=ROOT / '.venv/Scripts/python.exe', cmake=tool('cmake'), configuration=args.config)
     cache = (output / 'CMakeCache.txt').read_text(encoding='utf-8')
     expected = 'SDK_PROJECT_DIR:PATH=' + project.directory.as_posix()
     if expected not in cache.replace('\\', '/').splitlines():
@@ -115,10 +122,11 @@ def test_command(args, output):
     return command
 
 
-def main():
+def main(argv=None, initialize_ide=False):
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest='command', required=True)
     sub.add_parser('doctor')
+    sub.add_parser('check-config', help='Validate first-party configuration without changing files')
     sub.add_parser('projects')
     refresh = sub.add_parser('refresh-projects', help='Refresh root C/C++ project configurations without configuring or building')
     refresh.add_argument('--board', choices=['windows_sim'])
@@ -147,13 +155,16 @@ def main():
             child.add_argument('--only', nargs='+', metavar='TEST', help='Run only these exact registered test names')
             child.add_argument('--list', dest='list_tests', action='store_true', help='Configure and list tests without building or running them')
             child.add_argument('--with-window-tests', action='store_true', help='Explicitly include JUCE window, device and viewport tests')
-    args = parser.parse_args()
-    if args.command == 'doctor':
+    args = parser.parse_args(argv)
+    if args.command == 'check-config':
+        print(json.dumps(config_check.check(ROOT), indent=2))
+    elif args.command == 'doctor':
         print(json.dumps({'python': sys.executable, 'cmake': tool('cmake'), 'ninja': tool('ninja'), 'clang-format': tool('clang-format'), 'visual_studio': str(vs_root())}, indent=2))
     elif args.command == 'projects':
         print(json.dumps([{'id': project.id, 'path': project.directory.relative_to(ROOT).as_posix()} for project in projects.discover(ROOT)], indent=2))
     elif args.command == 'refresh-projects':
-        names = ide.refresh_projects(ROOT, args.board, args.config)
+        config_check.check(ROOT, generated=False, board=args.board, configuration=args.config)
+        names = ide.refresh_projects(ROOT, args.board, args.config, repair=True)
         print('C/C++ project configurations: ' + ', '.join(names))
     elif args.command == 'release-check':
         print(json.dumps(repository.release_check(ROOT), indent=2))
@@ -171,6 +182,9 @@ def main():
         if args.command == 'run' and args.smoke_seconds and args.smoke_seconds < 3:
             raise RuntimeError('Smoke duration must be at least 3 seconds')
         project, output = configure(args, interactive=args.command == 'menuconfig')
+        if initialize_ide and args.command in ('build', 'run', 'configure'):
+            ide.generate(ROOT, project, args.board, args.config)
+            ide.refresh_projects(ROOT, args.board, args.config, repair=True)
         selected_test_command = test_command(args, output) if args.command == 'test' else None
         if args.command in ('build', 'run') or (args.command == 'test' and not args.list_tests):
             run([tool('cmake'), '--build', output, '--parallel', '4'], env=build_env())

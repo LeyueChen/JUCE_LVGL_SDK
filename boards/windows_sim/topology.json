@@ -2,10 +2,33 @@
   "schema": 1,
   "backend": "windows-freertos",
   "cores": [
-    {"id": 0, "role": "primary", "runtime": "freertos", "enabled": true},
-    {"id": 1, "role": "reserved", "runtime": null, "enabled": false},
-    {"id": 2, "role": "reserved", "runtime": null, "enabled": false},
-    {"id": 3, "role": "reserved", "runtime": null, "enabled": false}
+    {
+      "id": 0,
+      "role": "primary",
+      "runtime": "freertos",
+      "enabled": true
+    },
+    {
+      "id": 1,
+      "role": "reserved",
+      "runtime": null,
+      "enabled": false
+    },
+    {
+      "id": 2,
+      "role": "reserved",
+      "runtime": null,
+      "enabled": false
+    },
+    {
+      "id": 3,
+      "role": "reserved",
+      "runtime": null,
+      "enabled": false
+    }
   ],
-  "host_affinity": {"processor": "first-allowed", "strict": true}
+  "host_affinity": {
+    "processor": "first-allowed",
+    "strict": true
+  }
 }

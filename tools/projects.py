@@ -75,4 +75,7 @@ def scaffold(root: Path, name: str, destination: Path | None = None) -> Project:
     metadata = json.loads((destination / 'project.json').read_text(encoding='utf-8'))
     metadata.update(id=name, display_name=name)
     (destination / 'project.json').write_text(json.dumps(metadata, indent=2) + '\n', encoding='utf-8')
+    properties = destination / '.vscode/c_cpp_properties.json'
+    if properties.exists():
+        properties.write_text(properties.read_text(encoding='utf-8').replace('@PROJECT_ID@', name), encoding='utf-8')
     return load(destination)

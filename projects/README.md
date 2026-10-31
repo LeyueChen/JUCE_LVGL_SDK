@@ -2,9 +2,12 @@
 
 完整应用/产品统一采用 projects/<name>/project.json 与 projects/<name>/user/。项目 ID 必须与 examples/ 中的 ID 保持唯一，支持小写字母、数字、连字符和下划线，例如 rakure_gui。
 
+各项目的 .vscode/c_cpp_properties.json 为可跟踪的 IDE 配置源，配置名与项目 ID 一致。SDK 读取该文件和真实编译数据库来生成根目录配置；项目源文件保留注释和自定义内容，不在刷新时重写。根 c_cpp_properties.json、生成工作区、out 和 .local 保持本地。
+
 当前 audio 项目位于 projects/audio，内部 rakure_ea 和 rakure_gui 为独立模块，各自管理 CMakeLists、源码、公开头文件和依赖。user/CMakeLists 自动发现并组合已注册模块。
 
 ```powershell
+.\sdk.cmd setup --project audio
 .\.venv\Scripts\python.exe tools/sdk.py projects
 .\.venv\Scripts\python.exe tools/sdk.py refresh-projects
 .\.venv\Scripts\python.exe tools/sdk.py workspace --project audio

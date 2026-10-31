@@ -4,8 +4,11 @@
 /out/
 /docs
 /workspaces/*.code-workspace
-/examples/*/.vscode/
-/projects/*/.vscode/
+/.vscode/c_cpp_properties.json
+/examples/*/.vscode/*
+!/examples/*/.vscode/c_cpp_properties.json
+/projects/*/.vscode/*
+!/projects/*/.vscode/c_cpp_properties.json
 /CMakeUserPresets.json
 __pycache__/
 *.pyc

@@ -4,19 +4,26 @@
 
 ## 开始使用
 
-安装 Visual Studio 的 C++ 桌面开发及 CMake 工具、Git、Python 3.11+。脚本在仓库内创建虚拟环境，自动查找 VS 的 CMake/Ninja，无需更改全局 PATH。
+首次使用的机器需要安装 Git for Windows、64 位 Python 3.11+（启用 Python launcher 或加入 PATH），以及 Visual Studio / Build Tools 的“使用 C++ 的桌面开发”、MSVC x64、Windows SDK 和 CMake 工具。脚本通过 vswhere 查找本机 VS、CMake/Ninja 和编译器，无需填写某台机器上的绝对路径。
 
 ```powershell
-# 首次克隆时安装宿主依赖；已有 .venv 可跳过前两条
-python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install --cache-dir .cache/pip --require-hashes -r tools/requirements.txt
-.\.venv\Scripts\python.exe tools/sdk.py sync
-.\.venv\Scripts\python.exe tools/sdk.py workspace --project basic
+# clone 并进入仓库后，一条命令准备依赖、配置索引、编译并运行
+.\sdk.cmd run --project audio
+# 或者先准备开发环境和索引，暂不编译或启动窗口
+.\sdk.cmd setup --project audio
+# 仅检查就绪情况，不安装、同步、配置、构建或启动应用
+.\sdk.cmd setup --project audio --check
+# 检查第一方配置语法、字段类型、项目路径和任务引用，不修改文件
+.\sdk.cmd check-config
 ```
 
-VS Code 任务直接调用仓库 `.venv` 中的 Python，不依赖 PowerShell 脚本执行策略。仓库还保留 `tools/bootstrap.ps1` 和 `tools/sdk.ps1` 作为方便入口，使用它们时遵循本机现有策略。
+首次 run/build/setup 会在仓库内创建 `.venv`，按 `tools/requirements.txt` 的固定版本及哈希安装 Python 包，依据项目 Kconfig 初始化缺失的 submodule，并使用父仓库 gitlink 固定提交。首次准备需要联网；后续复用已有环境和依赖。已初始化的依赖若有改动或版本不符会停止并提示检查；已经准备过的 Python 环境与锁文件不符时，需显式执行 setup。不会自动升级第三方库。
 
-可以直接在 VS Code 打开仓库文件夹，在 C/C++ 配置选择器中选择 `audio` 或 `basic`，然后执行 `SDK: run`，自动配置、编译并运行该项目；`Ctrl+Shift+B` 构建，`F5` 调试，也使用当前 C/C++ 配置名。首次替换旧配置后先手动选择一次 `audio`。任务列表还提供 `SDK: clean`、`SDK: test`、`SDK: menuconfig` 和 `SDK: refresh projects`。
+`sdk.cmd` 优先使用 `SDK_PYTHON` 显式指定的解释器，否则尝试仓库 `.venv`、`py -3` 和 PATH 中的 64 位 Python。它不依赖 PowerShell 执行策略；原有 `tools/bootstrap.ps1`（转发 setup）和 `tools/sdk.ps1` 仍可使用，并遵循本机已有策略。缺少系统工具时提供安装提示，由使用者安装；脚本不安装系统工具或修改全局环境。`sdk.cmd doctor` 可检查工具链和 Python 环境。CMake 需要 3.25+；实际配置显式使用当前探测到的 MSVC，检查缓存中的 C/C++ 编译器、CMake、Ninja 和 Python 是否有效并与当前工具一致。
+
+SDK 默认索引配置不保存主机编译器路径，也不把它搬到专属工作区设置中。源文件通过各项目的 `compile_commands.json` 获取真实编译配置，未匹配的文件由 C/C++ 扩展发现本机编译器。项目源配置仍可显式覆盖 IDE 编译器；这是该项目自己的设置，不改变 SDK 的真实构建工具链。编译数据库和 CMake 缓存按工具格式包含本机绝对路径，仅保存在 out 中，必须在新机器重新生成。
+
+可以直接在 VS Code 打开仓库文件夹，先执行 **SDK: setup**，不依赖已有 `.venv` 或 C/C++ 配置。默认准备 audio；没有 audio 时优先选择已有产品，再选择示例。随后在 C/C++ 配置选择器中选择 `audio` 或 `basic`，执行 `SDK: run` 自动配置、编译并运行该项目；`Ctrl+Shift+B` 和 `F5` 也使用当前 C/C++ 配置名。首次选择其他项目，可先用 `sdk.cmd setup --project <id>` 准备其依赖和编译数据库。任务列表还提供 `SDK: clean`、`SDK: test`、`SDK: menuconfig` 和 `SDK: refresh projects`。
 
 也可以打开生成的 `workspaces/basic-windows_sim-debug.code-workspace` 或 audio 专属工作区，使用固定到该项目的索引、任务和调试入口。
 
@@ -31,7 +38,9 @@ VS Code 任务直接调用仓库 `.venv` 中的 Python，不依赖 PowerShell �
 .\.venv\Scripts\python.exe tools/sdk.py format --check
 ```
 
-普通构建使用 `BUILD_TESTING=OFF`；`test` 在独立的 `out/<id>/<board>/Debug-tests`（或 `Release-tests`）中编译验证程序。`workspace` 显式生成项目工作区并刷新根目录配置列表；`refresh-projects` 只读取工程元数据和已有编译数据库来刷新 IDE 配置，不触发构建。build/clean/run 不改写索引设置。
+普通构建使用 `BUILD_TESTING=OFF`；`test` 在独立的 `out/<id>/<board>/Debug-tests`（或 `Release-tests`）中编译验证程序。`workspace` 显式生成项目工作区并刷新根目录配置列表；`refresh-projects` 读取项目元数据、项目自己的 JSONC 配置和已有编译数据库，生成根 IDE 配置，不触发构建。已有项目配置文件不会被刷新或 workspace 重写。根目录及专属工作区的 SDK 任务统一通过 sdk.cmd；build/run/configure 发现缺失或失效的 IDE 生成结果时补齐，后续复用。直接调用 tools/sdk.py 的 build/clean/run 不改写 IDE 设置。
+
+`SDK: check config` / `sdk.cmd check-config` 检查第一方 JSON/JSONC、Python 语法、项目字段和 IDE 路径约束、任务引用；`setup --check` 进一步检查当前宿主环境、缓存、编译数据库及工作区内容，不再以文件存在作为就绪依据。生成配置损坏时，setup/refresh 将原内容备份到 `.local/config-recovery/` 后重新生成，并以原子替换写入文件。项目源配置损坏时报告错误，不覆盖它；有效的用户设置和项目源文件继续保留。
 
 已通过且与本次改动无关的测试不重复运行。平时按改动选择 `--only` 中的精确测试名；不指定时运行当前已注册的测试。`--list` 仅配置并列出测试，不构建或启动测试程序。测试名不存在或未启用时直接报错，避免错误筛选后误跑其他测试。
 
@@ -46,7 +55,7 @@ VS Code 任务直接调用仓库 `.venv` 中的 Python，不依赖 PowerShell �
 
 默认 `SDK: test`、命令行 test 和 CMake 测试预设不注册 `host_device_settings`、`runtime_smoke`、`viewport_contracts`、`viewport_runtime`，不会自动创建这些测试窗口、切换窗口尺寸或最大化。只有相关实现变化、排错或明确要求时才按需启用。直接使用 CMake 时设置 `-DBUILD_TESTING=ON -DSDK_ENABLE_WINDOW_TESTS=ON` 才注册这些测试，CTest 标签为 `window`；测试代码和既有验证产物继续保留。命令行每次配置都会根据 `--with-window-tests` 显式设置开关，下一次普通 test 自动恢复关闭状态。
 
-普通构建不下载、不升级依赖。`clean` 只清理所选构建目录中的编译产物，保留配置、编译数据库、依赖、运行数据和旧缓存。
+直接调用 tools/sdk.py 的普通构建不下载、不升级依赖；sdk.cmd 的首次准备只初始化项目所需的缺失依赖。`clean` 只清理所选构建目录中的编译产物，保留配置、编译数据库、依赖、运行数据和旧缓存。复制整个工作目录到另一台机器时，旧 `.venv` 或 CMake 缓存可能包含旧路径；工具会停止并提示将对应目录自行另存，再执行 setup，不自动删除。推荐新机器重新 clone，并重新生成这些忽略提交的本机文件。
 
 ## 目录和项目隔离
 
@@ -55,7 +64,8 @@ LVGL_JUCE/
 ├─ .gitmodules                     # 14 个直接依赖的上游 URL
 ├─ .clang-format                   # 用户提供的格式规则
 ├─ AGENTS.md                       # 先计划、确认后执行的工作流
-├─ .vscode/                        # 以当前 C/C++ 配置名选择项目的任务、调试和索引
+├─ sdk.cmd                         # 首次准备及日常命令的统一入口
+├─ .vscode/                        # SDK 通用任务/调试；根 c_cpp_properties.json 为本地生成结果
 ├─ sdk/                            # 公共接口、服务、OSAL、第三方配置与适配
 ├─ platforms/windows/              # JUCE、FreeRTOS port、宿主桥接及设备
 ├─ boards/windows_sim/             # 板级默认配置和核拓扑
@@ -65,9 +75,11 @@ LVGL_JUCE/
 │  └─ recipes/                     # 平台构建接入
 ├─ examples/basic/
 │  ├─ project.json
+│  ├─ .vscode/c_cpp_properties.json # 随项目跟踪的 IDE 配置源
 │  └─ user/                        # SDK 的可运行示例
 ├─ projects/<product>/                 # 新应用/产品项目，audio 为音频演示
 │  ├─ project.json
+│  ├─ .vscode/c_cpp_properties.json # 项目自己的 IDE 配置源，随产品分支维护
 │  ├─ targets/windows_sim.conf     # 产品对平台的配置覆盖，可选
 │  └─ user/                        # 可移植业务、UI、协议和核职责
 ├─ templates/project/              # 创建产品时复制的模板
@@ -85,9 +97,15 @@ LVGL_JUCE/
 
 根目录 `.vscode/c_cpp_properties.json` 中的 SDK 配置名与项目 ID 一致。任务和 F5 通过 `${command:cpptools.activeConfigName}` 获取当前名称，构建目录、运行数据和符号数据库分别使用该 ID，根目录不再用 `sdk.project` 另选一次项目。各配置只引用自身的编译数据库、生成头文件和浏览目录。根目录符号数据库使用 `.local/intellisense/<id>/<board>/<config>/root/browse.vc.db`，与专属工作区的数据库分开，便于同时打开两种工作区。根目录多配置模式关闭持久化 ipch 缓存，避免多个项目共用该缓存；专属工作区继续使用各自的 ipch 路径。
 
-新增完整的 `projects/rakure_gui/project.json`、`user/app.conf` 和 user 构建入口后，执行 **SDK: refresh projects**，即可在 C/C++ 配置选择器中选择 `rakure_gui` 并使用 SDK: run。单独的音频 GUI 模块不是产品工程，需要这些项目元数据和构建入口。编译数据库尚不存在时可先执行当前项目的 SDK: configure，再刷新；改变板卡/Debug/Release 后也应刷新。带 `sdkManaged=root-project` 标记的索引字段由工具维护；已有自定义编译选项、其他配置和非 SDK 用户设置会保留。
+新增完整的 `projects/rakure_gui/project.json`、`user/app.conf` 和 user 构建入口后，执行 **SDK: refresh projects**，即可在 C/C++ 配置选择器中选择 `rakure_gui` 并使用 SDK: run。单独的音频 GUI 模块不是产品工程，需要这些项目元数据和构建入口。编译数据库尚不存在时工具会提示先执行当前项目的 SDK: configure，再刷新；改变板卡/Debug/Release 或切换产品分支后也应刷新。工具不会借用其他项目的编译数据库。
 
-每个产品工作区只打开对应项目目录，生成自己的 `.vscode/c_cpp_properties.json`，通过 `${default}` 继承工作区的编译数据库、限定浏览路径与符号缓存。SDK/第三方函数通过该项目实际编译的源文件跳转，不扫描全部产品。项目工作区还携带独立的 build/clean/run 和 F5 路径，避免根文件夹设置覆盖。详见 [工作区说明](workspaces/README.md)。
+每个项目的 `.vscode/c_cpp_properties.json` 是随项目分支维护的配置源，至少提供一个与 project.json ID 同名的配置。支持 JSONC 注释、尾逗号、项目自己的 env 和 `${default}`。SDK 按当前项目、板卡和构建配置填充默认值：编译数据库、工具链、生成头文件目录及符号数据库。实际编译依赖和宏仍由 CMake/Kconfig 管理，IDE 的补充设置不改变真实编译行为。
+
+根配置由工具读取项目源配置后合成，`${default}` 在 SDK 默认值中展开；`${workspaceFolder}` 按项目目录转换为根工作区路径，项目 env 在各自范围展开。根目录中的项目条目会在刷新时重新生成，个性化设置请写入项目源文件；与注册项目不同名的本地根配置和非 SDK 用户设置会保留。源文件解析、名称、变量或数据库/项目路径校验失败时，不覆盖原有根配置；其他 C/C++ 字段继续由扩展自己的配置检查验证。
+
+每个专属工作区只打开对应项目目录，直接使用项目源配置，通过 `${default}` 继承工作区的编译数据库、限定浏览路径与符号缓存。SDK/第三方函数通过该项目实际编译的源文件跳转，不扫描全部产品。项目工作区还携带独立的 build/clean/run 和 F5 路径。详见 [工作区说明](workspaces/README.md)。
+
+Git 跟踪 projects/examples 下的 `.vscode/c_cpp_properties.json` 和模板配置，继续忽略同目录其他本机文件；根 `.vscode/c_cpp_properties.json` 为本地生成结果，不跟踪。切换项目或刷新索引时无需提交根文件中的项目列表，`workspaces/*.code-workspace`、out 和 .local 继续只保存在本地。
 
 配置覆盖顺序为：板卡 `defconfig` → `user/app.conf` → `targets/<board>.conf` → `.local/config/<id>/<board>.conf`。第三方配置头和运行时参数由 SDK 映射；用户区域不管理依赖下载或平台头文件路径。
 

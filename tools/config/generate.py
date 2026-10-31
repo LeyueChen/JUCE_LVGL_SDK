@@ -6,7 +6,7 @@ import re
 
 
 def generate(root: Path, app: Path, board: Path, output: Path, interactive=False,
-             project_id=None, extra_fragments=()):
+             project_id=None, extra_fragments=(), write_outputs=True):
     import kconfiglib
     os.environ['srctree'] = str(root)
     config = kconfiglib.Kconfig(str(root / 'Kconfig'), warn_to_stderr=True)
@@ -42,6 +42,10 @@ def generate(root: Path, app: Path, board: Path, output: Path, interactive=False
         raise RuntimeError('Board topology does not match configured logical core slots')
     if [core['id'] for core in topology['cores'] if core['enabled']] != [0]:
         raise RuntimeError('Only CPU0 is implemented; secondary cores must remain reserved')
+    if not write_outputs:
+        if interactive:
+            raise ValueError('Interactive configuration requires output files')
+        return {name: symbol.str_value for name, symbol in config.syms.items() if name.startswith('SDK_')}
     if interactive:
         import menuconfig
         menuconfig.menuconfig(config)

@@ -152,14 +152,16 @@ class ProjectContracts(unittest.TestCase):
 
     def test_root_refresh_preserves_customizations_and_only_adds_new_projects(self):
         project = projects.scaffold(self.root, 'audio')
-        legacy = ide.project_properties('Windows SDK (selected project)')
-        ide.write_json(project.directory / '.vscode/c_cpp_properties.json', legacy)
+        source = project.directory / '.vscode/c_cpp_properties.json'
+        source_properties = json.loads(source.read_text())
+        source_properties['configurations'][0]['compilerPath'] = 'my-cl.exe'
+        source_properties['configurations'][0]['compilerArgs'] = ['/DKEEP_USER_OPTIONS']
+        source_properties['configurations'][0]['customConfigurationVariables'] = {'USER_KEEP': 'custom-value'}
+        ide.write_json(source, source_properties)
+        source_bytes = source.read_bytes()
         ide.refresh_projects(self.root)
         path = self.root / '.vscode/c_cpp_properties.json'
         properties = json.loads(path.read_text())
-        properties['configurations'][0]['compilerPath'] = 'my-cl.exe'
-        properties['configurations'][0]['compilerArgs'] = ['/DKEEP_USER_OPTIONS']
-        properties['configurations'][0]['customConfigurationVariables']['USER_KEEP'] = 'custom-value'
         custom = {'name': 'custom-toolchain', 'compilerPath': 'custom-cc.exe'}
         properties['configurations'].append(custom)
         ide.write_json(path, properties)
@@ -174,6 +176,7 @@ class ProjectContracts(unittest.TestCase):
         original = path.read_bytes()
         ide.refresh_projects(self.root)
         self.assertEqual(path.read_bytes(), original)
+        self.assertEqual(source.read_bytes(), source_bytes)
         for invalid in ('../escape', 'UPPER', '-leading', 'trailing_', 'two__parts'):
             with self.assertRaisesRegex(RuntimeError, 'Project names'):
                 projects.scaffold(self.root, invalid)
@@ -204,7 +207,7 @@ class ProjectContracts(unittest.TestCase):
             with patch.object(sys, 'argv', arguments), patch.object(sdk, 'ROOT', self.root), \
                  patch.object(sdk, 'configure', side_effect=configured), patch.object(sdk, 'build_env', return_value={}), \
                  patch.object(sdk, 'tool', return_value='cmake.exe'), patch.object(sdk, 'run') as run:
-                sdk.main()
+                sdk.main(arguments)
                 self.assertEqual(run.call_count, 2)
                 build, start = [call.args[0] for call in run.call_args_list]
                 expected = self.root / 'out' / name / 'windows_sim/Debug'
