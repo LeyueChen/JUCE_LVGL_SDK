@@ -65,6 +65,7 @@ add_library(sdk_runtime STATIC
     sdk/osal/freertos/os.c
     sdk/services/runtime.c
     sdk/services/input/buttons.c
+    sdk/adapters/lvgl/log.c
     platforms/windows/devices/input.cpp
     sdk/adapters/lvgl/display.c
     platforms/windows/devices/storage_backend.cpp
@@ -116,6 +117,14 @@ add_test(NAME bootstrap_contracts COMMAND "${Python_EXECUTABLE}" "${CMAKE_SOURCE
 add_test(NAME configuration_portability COMMAND "${Python_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tests/test_config_portability.py")
 add_test(NAME reconfigure_contracts COMMAND "${Python_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tests/test_reconfigure.py")
 add_test(NAME project_lvgl_configuration COMMAND "${Python_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tests/test_project_lvgl.py")
+add_test(NAME lvgl_build_configuration COMMAND "${Python_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tests/test_lvgl_build.py")
+set_tests_properties(lvgl_build_configuration PROPERTIES TIMEOUT 120)
+add_executable(sdk_lvgl_log_tests tests/lvgl_log.c sdk/adapters/lvgl/log.c)
+target_include_directories(sdk_lvgl_log_tests PRIVATE sdk/include sdk/adapters/lvgl)
+target_link_libraries(sdk_lvgl_log_tests PRIVATE lvgl)
+add_test(NAME lvgl_log_bridge COMMAND sdk_lvgl_log_tests)
+add_test(NAME project_protocol_modules COMMAND "${Python_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tests/test_protocol_modules.py")
+set_tests_properties(project_protocol_modules PROPERTIES TIMEOUT 120)
 add_test(NAME copied_user_modules COMMAND "${Python_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tests/test_modules.py" --generated "${SDK_GENERATED_DIR}")
 set_tests_properties(copied_user_modules PROPERTIES TIMEOUT 90)
 add_test(NAME repository_safety COMMAND "${Python_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tests/test_repository.py")

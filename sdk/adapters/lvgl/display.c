@@ -3,6 +3,7 @@
 #include "sdk/os.h"
 #include "sdk/host_bridge.h"
 #include "sdk_config.h"
+#include "log.h"
 #include <string.h>
 static uint32_t framebuffer[CONFIG_SDK_SCREEN_WIDTH * CONFIG_SDK_SCREEN_HEIGHT];
 static uint32_t draw_buffer[CONFIG_SDK_SCREEN_WIDTH * 64];
@@ -40,6 +41,7 @@ void sdk_ui_run(void *unused)
 	(void)unused;
 	sdk_ui_bind_current();
 	lv_init();
+	sdk_lvgl_log_init();
 	lv_tick_set_cb(tick_ms);
 	lv_display_t *display = lv_display_create(CONFIG_SDK_SCREEN_WIDTH,
 						  CONFIG_SDK_SCREEN_HEIGHT);

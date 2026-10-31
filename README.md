@@ -117,6 +117,12 @@ Git 跟踪 projects/examples 下的 `.vscode/c_cpp_properties.json` 和模板配
 
 构建将所选配置原样复制到该项目的 `out/<id>/<board>/<config>/generated/lv_conf.h`，并跟踪源文件变化；修改配置后重新构建即可生效。项目的 config 目录同时接入 LVGL 公共头文件搜索路径和独立索引，可在配置头中引用该目录下的其他头文件。修改项目源配置，生成文件由构建维护。分辨率等 `CONFIG_SDK_*` 选项继续放在 `user/app.conf`，通过生成的 `sdk_config.h` 提供给 LVGL 配置。
 
+配置阶段使用本机 C 编译器预处理 LVGL 开关，CMake 的 examples、demos、内部 ThorVG 构建跟随实际生效的原生宏，包含条件编译、宏表达式和辅助头文件；辅助头文件修改也会触发重新配置。`LV_BUILD_EXAMPLES`/`LV_BUILD_DEMOS` 启用后提供 `lvgl::examples`/`lvgl::demos`，使用它们的 user 模块需显式链接对应目标。SDK 不自动下载额外依赖；未接入的外部后端、外部 ThorVG 和外部演示仓库会在配置阶段明确报错。
+
+`LV_USE_LOG=1` 时，UiTask 初始化 LVGL 后注册 SDK 日志出口，日志经非阻塞队列交给 LogTask 和 HOST；`LV_LOG_LEVEL` 继续由项目控制，建议使用 `LV_LOG_PRINTF=0`。日志沿用 SDK 队列容量和单条长度限制，队列满时丢弃，不阻塞界面；关闭 EasyLogger 时仍可输出到 HOST。
+
+SDK 仅提供 nanopb 运行库和 `sdk_generate_protocol()` 工具函数。各项目 `user/protocol/CMakeLists.txt` 自行生成并注册 `sdk_user_protocol`，生成文件位于对应模块的独立构建目录。需要协议类型的其他 user 模块应显式链接 `sdk_user_protocol`；通用 SDK 组件和运行时不依赖产品协议。
+
 ## Git 分支和 submodule
 
 完整应用/产品统一位于 `projects/<name>/user/`；SDK 稳定线为 `sdk/main`，通用功能使用 `sdk/feature/<topic>`；产品线为 `project/<name>/main`，产品功能使用 `project/<name>/feature/<topic>`。产品从审阅后的 SDK 发布标签建立，之后主动合并新的 SDK 标签。

@@ -1,4 +1,7 @@
 set_property(DIRECTORY PROPERTY SDK_USER_MODULE_TARGET "")
+if(CONFIG_SDK_NANOPB STREQUAL "y")
+    sdk_generate_protocol(sdk_user_protocol "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/generated")
+endif()
 if(TARGET sdk_user_protocol)
     set_property(DIRECTORY PROPERTY SDK_USER_MODULE_TARGET sdk_user_protocol)
 endif()
