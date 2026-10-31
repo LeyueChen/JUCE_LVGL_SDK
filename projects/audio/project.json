@@ -1,0 +1,7 @@
+{
+  "schema": 1,
+  "id": "audio",
+  "display_name": "Rakure audio demo",
+  "user_dir": "user",
+  "default_board": "windows_sim"
+}

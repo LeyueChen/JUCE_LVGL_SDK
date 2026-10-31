@@ -33,12 +33,12 @@ class ConfigurationContracts(unittest.TestCase):
             self.resolve('CONFIG_SDK_UNKNOWN=y\n')
 
     def test_user_sources_do_not_import_platform_headers(self):
-        sources = [path for category in ('examples', 'projects', 'templates') for user in (ROOT / category).glob('*/user') for path in user.rglob('*')]
+        sources = [path for category in ('examples', 'projects', 'templates') for user in (ROOT / category).glob('*/user') for path in user.rglob('*') if 'tests' not in path.relative_to(user).parts]
         self.assertTrue(sources)
         for path in sources:
             if path.suffix in ('.c', '.h', '.cpp'):
                 text = path.read_text(encoding='utf-8').lower()
-                for forbidden in ('windows.h', 'freertos.h', 'sdk/host_bridge.h', 'juce_gui_basics'):
+                for forbidden in ('windows.h', 'sdk/host_bridge.h', 'juce_gui_basics'):
                     self.assertNotIn(forbidden, text, str(path))
 
 

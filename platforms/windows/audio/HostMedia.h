@@ -1,7 +1,7 @@
 #pragma once
 #include <juce_audio_utils/juce_audio_utils.h>
 #include "backend.h"
-#include "queue.h"
+#include "bounded_queue.h"
 #include <memory>
 class HostMedia final : private juce::AudioIODeviceCallback,
 			private juce::MidiInputCallback,

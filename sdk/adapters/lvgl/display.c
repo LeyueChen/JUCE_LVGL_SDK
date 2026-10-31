@@ -38,6 +38,7 @@ static void pointer_read(lv_indev_t *device, lv_indev_data_t *data)
 void sdk_ui_run(void *unused)
 {
 	(void)unused;
+	sdk_ui_bind_current();
 	lv_init();
 	lv_tick_set_cb(tick_ms);
 	lv_display_t *display = lv_display_create(CONFIG_SDK_SCREEN_WIDTH,
@@ -51,6 +52,7 @@ void sdk_ui_run(void *unused)
 	lv_indev_set_read_cb(pointer, pointer_read);
 	user_ui_create();
 	while (!sdk_host_stop_requested()) {
+		sdk_ui_dispatch();
 		user_ui_tick();
 		uint32_t wait = lv_timer_handler();
 		sdk_delay_ms(wait > 16 ? 16 : (wait ? wait : 1));

@@ -1,18 +1,52 @@
 {
   "version": 6,
-  "cmakeMinimumRequired": {"major": 3, "minor": 25, "patch": 0},
-  "configurePresets": [{
-    "name": "win-debug",
-    "displayName": "Windows / CPU0 FreeRTOS / Debug",
-    "generator": "Ninja",
-    "binaryDir": "${sourceDir}/out/basic/windows_sim/Debug",
-    "cacheVariables": {
-      "CMAKE_BUILD_TYPE": "Debug",
-      "SDK_BOARD": "windows_sim",
-      "SDK_PROJECT_DIR": "${sourceDir}/examples/basic",
-      "Python_EXECUTABLE": "${sourceDir}/.venv/Scripts/python.exe"
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 25,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "win-debug",
+      "displayName": "Windows / CPU0 FreeRTOS / Debug",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/out/basic/windows_sim/Debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "SDK_BOARD": "windows_sim",
+        "SDK_PROJECT_DIR": "${sourceDir}/examples/basic",
+        "Python_EXECUTABLE": "${sourceDir}/.venv/Scripts/python.exe",
+        "BUILD_TESTING": "OFF"
+      }
+    },
+    {
+      "name": "win-debug-tests",
+      "inherits": "win-debug",
+      "binaryDir": "${sourceDir}/out/basic/windows_sim/Debug-tests",
+      "cacheVariables": {
+        "BUILD_TESTING": "ON"
+      }
     }
-  }],
-  "buildPresets": [{"name": "win-debug", "configurePreset": "win-debug", "jobs": 4}],
-  "testPresets": [{"name": "win-debug", "configurePreset": "win-debug", "output": {"outputOnFailure": true}}]
+  ],
+  "buildPresets": [
+    {
+      "name": "win-debug",
+      "configurePreset": "win-debug",
+      "jobs": 4
+    },
+    {
+      "name": "win-debug-tests",
+      "configurePreset": "win-debug-tests",
+      "jobs": 4
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "win-debug-tests",
+      "configurePreset": "win-debug-tests",
+      "output": {
+        "outputOnFailure": true
+      }
+    }
+  ]
 }

@@ -32,6 +32,11 @@ def generate(root: Path, app: Path, board: Path, output: Path, interactive=False
             raise RuntimeError(f'Unsupported configuration CONFIG_{name}={expected}; resolved {actual}')
     if config.warnings:
         raise RuntimeError('Kconfig warnings must be resolved before building')
+    if config.syms['SDK_MULTIBUTTON'].str_value == 'y':
+        scan = int(config.syms['SDK_BUTTON_SCAN_MS'].str_value)
+        tick = int(config.syms['SDK_TICK_RATE_HZ'].str_value)
+        if scan * tick % 1000 or scan * tick < 1000:
+            raise RuntimeError('SDK_BUTTON_SCAN_MS must be a positive whole number of FreeRTOS ticks')
     topology = json.loads((board / 'topology.json').read_text(encoding='utf-8'))
     if len(topology['cores']) != int(config.syms['SDK_CORE_SLOTS'].str_value):
         raise RuntimeError('Board topology does not match configured logical core slots')

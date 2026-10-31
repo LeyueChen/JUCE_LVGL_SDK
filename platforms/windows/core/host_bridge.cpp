@@ -205,35 +205,8 @@ extern "C" int sdk_host_storage_start(const char *directory)
 			}
 			const auto &request = storage_request;
 			storage_result = {};
-			int result = -1;
-			switch (request.operation) {
-			case SDK_STORAGE_KV_SET:
-				result = sdk_backend_kv_set(backend,
-							    request.key,
-							    request.data,
-							    request.size);
-				break;
-			case SDK_STORAGE_KV_GET:
-				result = sdk_backend_kv_get(backend,
-							    request.key,
-							    storage_result.data,
-							    request.size);
-				break;
-			case SDK_STORAGE_FILE_WRITE:
-				result = sdk_backend_file_write(backend,
-								request.key,
-								request.data,
-								request.size);
-				break;
-			case SDK_STORAGE_FILE_READ:
-				result = sdk_backend_file_read(
-					backend, request.key,
-					storage_result.data, request.size);
-				break;
-			}
-			storage_result.result = result < 0 ? -1 : 0;
-			storage_result.size = result > 0 ? unsigned(result) : 0;
-			if (result < 0)
+			sdk_backend_execute(backend, &request, &storage_result);
+			if (storage_result.result < 0)
 				++storage_failed;
 			else
 				++storage_completed;

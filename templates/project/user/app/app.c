@@ -1,4 +1,6 @@
 #include "sdk/os.h"
+#include "FreeRTOS.h"
+#include "task.h"
 #include "sdk/system.h"
 #include "sdk/log.h"
 #include "sdk/core.h"
@@ -10,6 +12,7 @@
 static void app_task(void *context)
 {
 	(void)context;
+	TickType_t wake = xTaskGetTickCount();
 	while (!sdk_system_is_stopping()) {
 		sdk_app_heartbeat();
 #ifdef CONFIG_SDK_CJSON
@@ -26,13 +29,13 @@ static void app_task(void *context)
 #else
 		sdk_log_text("CPU0 application heartbeat");
 #endif
-		sdk_delay_ms(1000);
+		xTaskDelayUntil(&wake, pdMS_TO_TICKS(1000));
 	}
+	vTaskDelete(NULL);
 }
 void user_app_start(void)
 {
 	user_media_start();
-	const sdk_task_config_t task = { "AppTask", 16384, 2, 0 };
-	if (sdk_task_create(&task, app_task, 0))
+	if (xTaskCreate(app_task, "AppTask", 4096, 0, 2, NULL) != pdPASS)
 		sdk_assert_failed(__FILE__, __LINE__);
 }

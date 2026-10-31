@@ -4,7 +4,11 @@
 #include "sdk_project.h"
 #include "HostMedia.h"
 #include "DisplayCanvas.h"
+#include "KeyboardInput.h"
+#ifdef SDK_DIAGNOSTICS
 #include "viewport.h"
+extern "C" int sdk_rtos_self_test_passed(void);
+#endif
 #include <vector>
 #include <cstdio>
 
@@ -91,6 +95,11 @@ class SimulatorView final : public DisplayCanvas, private juce::Timer {
 			       stats.affinity_failures == 0 &&
 			       stats.bound_threads >= 8 && stats.frames > 0 &&
 			       stats.heartbeats > 0;
+#ifdef SDK_DIAGNOSTICS
+		report->setProperty("rtos_contracts_passed",
+				    sdk_rtos_self_test_passed() != 0);
+		healthy = healthy && sdk_rtos_self_test_passed();
+#endif
 		unsigned expectedStorage = 0;
 #ifdef CONFIG_SDK_FLASHDB
 		++expectedStorage;
@@ -261,6 +270,7 @@ class SimulatorShell final : public juce::Component, private juce::Timer {
     public:
 	SimulatorShell(int seconds, HostMedia &service, bool probe)
 		: view(seconds, service, probe)
+		, keyboard(view, seconds == 0)
 		, media(service)
 	{
 		addAndMakeVisible(view);
@@ -285,6 +295,7 @@ class SimulatorShell final : public juce::Component, private juce::Timer {
 		g.fillAll(juce::Colour(0xff20242b));
 	}
 	SimulatorView view;
+	KeyboardInput keyboard;
 
     private:
 	void timerCallback() override
@@ -332,8 +343,10 @@ class SimulatorApplication final : public juce::JUCEApplication {
 		void activeWindowStatusChanged() override
 		{
 			juce::DocumentWindow::activeWindowStatusChanged();
-			if (!isActiveWindow() && shell)
+			if (!isActiveWindow() && shell) {
 				shell->view.cancelPointer();
+				shell->keyboard.cancel();
+			}
 		}
 	};
 
@@ -344,7 +357,7 @@ class SimulatorApplication final : public juce::JUCEApplication {
 	}
 	const juce::String getApplicationVersion() override
 	{
-		return "0.1.0";
+		return SDK_VERSION;
 	}
 	bool moreThanOneInstanceAllowed() override
 	{
@@ -355,6 +368,7 @@ class SimulatorApplication final : public juce::JUCEApplication {
 		auto arguments =
 			juce::StringArray::fromTokens(commandLine, true);
 		arguments.trim();
+#ifdef SDK_DIAGNOSTICS
 		int viewportTest = arguments.indexOf("--viewport-self-test");
 		if (viewportTest >= 0 && viewportTest + 1 < arguments.size()) {
 			setApplicationReturnValue(
@@ -385,6 +399,7 @@ class SimulatorApplication final : public juce::JUCEApplication {
 			quit();
 			return;
 		}
+#endif
 		if (sdk_host_init()) {
 			setApplicationReturnValue(1);
 			quit();

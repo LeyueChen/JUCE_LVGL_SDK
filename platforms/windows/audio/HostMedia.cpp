@@ -422,6 +422,7 @@ juce::var HostMedia::report()
 	r->setProperty("audio_device_types", types);
 	return juce::var(r.get());
 }
+#ifdef SDK_DIAGNOSTICS
 bool HostMedia::selfTest(const juce::File &directory)
 {
 	auto testDirectory =
@@ -528,3 +529,4 @@ bool HostMedia::inputTest(const juce::File &directory)
 		.replaceWithText(juce::JSON::toString(result));
 	return ok;
 }
+#endif

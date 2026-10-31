@@ -173,6 +173,69 @@ int main(int argc, char **argv)
 		REQUIRE(std::strcmp(restored, message) == 0);
 		std::puts("PASS FlashDB persistence across deinit/reopen");
 #endif
+
+		sdk_storage_request_t request{};
+		sdk_storage_result_t result{};
+#ifdef CONFIG_SDK_LITTLEFS
+		request.operation = SDK_STORAGE_FILE_MKDIR;
+		std::strcpy(request.key, "/resources");
+		sdk_backend_execute(backend, &request, &result);
+		REQUIRE(!result.result);
+		std::strcpy(request.key, "/resources/model.tmp");
+		for (unsigned part = 0; part < 3; ++part) {
+			request.operation = part ? SDK_STORAGE_FILE_WRITE_AT :
+						   SDK_STORAGE_FILE_WRITE;
+			request.offset = part * 256;
+			request.size = 256;
+			std::memset(request.data, int(part + 10), 256);
+			sdk_backend_execute(backend, &request, &result);
+			REQUIRE(!result.result && result.size == 256);
+		}
+		request.operation = SDK_STORAGE_FILE_RENAME;
+		std::strcpy(request.destination, "/resources/model.bin");
+		sdk_backend_execute(backend, &request, &result);
+		REQUIRE(!result.result);
+		std::strcpy(request.key, request.destination);
+		request.operation = SDK_STORAGE_FILE_SIZE;
+		sdk_backend_execute(backend, &request, &result);
+		REQUIRE(!result.result && result.size == 768);
+		request.operation = SDK_STORAGE_FILE_READ_AT;
+		request.offset = 256;
+		sdk_backend_execute(backend, &request, &result);
+		REQUIRE(!result.result && result.size == 256);
+		for (auto value : result.data)
+			REQUIRE(value == 11);
+		request.operation = SDK_STORAGE_FILE_REMOVE;
+		sdk_backend_execute(backend, &request, &result);
+		REQUIRE(!result.result);
+		request.operation = SDK_STORAGE_FILE_SIZE;
+		sdk_backend_execute(backend, &request, &result);
+		REQUIRE(result.result == SDK_STORAGE_NOT_FOUND);
+		std::puts("PASS littlefs chunked resources/rename/size/remove");
+#endif
+#ifdef CONFIG_SDK_FLASHDB
+		request = {};
+		std::strcpy(request.key, "test");
+		request.operation = SDK_STORAGE_KV_SIZE;
+		sdk_backend_execute(backend, &request, &result);
+		REQUIRE(!result.result && result.size == sizeof(message));
+		request.operation = SDK_STORAGE_KV_GET;
+		request.size = 1;
+		sdk_backend_execute(backend, &request, &result);
+		REQUIRE(result.result == SDK_STORAGE_BUFFER_TOO_SMALL);
+		request.operation = SDK_STORAGE_KV_DELETE;
+		sdk_backend_execute(backend, &request, &result);
+		REQUIRE(!result.result);
+		request.operation = SDK_STORAGE_KV_GET;
+		sdk_backend_execute(backend, &request, &result);
+		REQUIRE(result.result == SDK_STORAGE_NOT_FOUND);
+		std::puts("PASS FlashDB size/short-buffer/delete/missing");
+#endif
+		request = {};
+		request.operation = SDK_STORAGE_FILE_READ;
+		std::strcpy(request.key, "/resources/../secret");
+		sdk_backend_execute(backend, &request, &result);
+		REQUIRE(result.result == SDK_STORAGE_INVALID);
 		sdk_backend_close(backend);
 		return 0;
 	} catch (const std::exception &error) {

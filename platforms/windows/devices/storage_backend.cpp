@@ -29,7 +29,7 @@ struct Backend {
 #endif
 };
 #ifdef CONFIG_SDK_LITTLEFS
-constexpr long block_size = 4096, block_count = 128;
+constexpr long block_size = 4096, block_count = CONFIG_SDK_LITTLEFS_BLOCK_COUNT;
 bool range_ok(lfs_block_t block, lfs_off_t offset, lfs_size_t size)
 {
 	return block < block_count && offset <= block_size &&
@@ -169,7 +169,7 @@ extern "C" void *sdk_backend_open(const char *directory)
 		return nullptr;
 	}
 	bool file_mode = true;
-	uint32_t sector = 4096, maximum = sector * 16;
+	uint32_t sector = 4096, maximum = sector * CONFIG_SDK_FLASHDB_SECTORS;
 	fdb_kvdb_control(&b->database, FDB_KVDB_CTRL_SET_SEC_SIZE, &sector);
 	fdb_kvdb_control(&b->database, FDB_KVDB_CTRL_SET_MAX_SIZE, &maximum);
 	fdb_kvdb_control(&b->database, FDB_KVDB_CTRL_SET_FILE_MODE, &file_mode);
@@ -261,5 +261,134 @@ extern "C" int sdk_backend_kv_get(void *opaque, const char *key, void *data,
 	(void)data;
 	(void)capacity;
 	return -1;
+#endif
+}
+namespace
+{
+#ifdef CONFIG_SDK_LITTLEFS
+int storage_error(int code)
+{
+	if (code >= 0)
+		return 0;
+	if (code == LFS_ERR_NOENT)
+		return SDK_STORAGE_NOT_FOUND;
+	if (code == LFS_ERR_NOSPC)
+		return SDK_STORAGE_NO_SPACE;
+	if (code == LFS_ERR_INVAL || code == LFS_ERR_NAMETOOLONG)
+		return SDK_STORAGE_INVALID;
+	return SDK_STORAGE_IO;
+}
+#endif
+}
+extern "C" void sdk_backend_execute(void *opaque,
+				    const sdk_storage_request_t *r,
+				    sdk_storage_result_t *out)
+{
+	*out = {};
+	out->result = sdk_storage_validate(r);
+	if (out->result)
+		return;
+	auto *b = static_cast<Backend *>(opaque);
+	out->result = SDK_STORAGE_UNAVAILABLE;
+	if (!b)
+		return;
+	const bool kv = r->operation == SDK_STORAGE_KV_SET ||
+			r->operation == SDK_STORAGE_KV_GET ||
+			r->operation == SDK_STORAGE_KV_DELETE ||
+			r->operation == SDK_STORAGE_KV_SIZE;
+	if (kv) {
+#ifdef CONFIG_SDK_FLASHDB
+		if (!b->kv_ready)
+			return;
+		fdb_kv object{};
+		if (r->operation != SDK_STORAGE_KV_SET &&
+		    !fdb_kv_get_obj(&b->database, r->key, &object)) {
+			out->result = SDK_STORAGE_NOT_FOUND;
+			return;
+		}
+		out->result = 0;
+		if (r->operation == SDK_STORAGE_KV_SIZE)
+			out->size = object.value_len;
+		if (r->operation == SDK_STORAGE_KV_SET)
+			out->result =
+				sdk_backend_kv_set(b, r->key, r->data, r->size);
+		if (r->operation == SDK_STORAGE_KV_DELETE)
+			out->result = fdb_kv_del(&b->database, r->key) ==
+						      FDB_NO_ERR ?
+					      0 :
+					      SDK_STORAGE_IO;
+		if (r->operation == SDK_STORAGE_KV_GET) {
+			out->size = object.value_len;
+			if (object.value_len > r->size)
+				out->result = SDK_STORAGE_BUFFER_TOO_SMALL;
+			else {
+				int n = sdk_backend_kv_get(b, r->key, out->data,
+							   r->size);
+				if (n != (int)object.value_len)
+					out->result = SDK_STORAGE_IO;
+			}
+		}
+#endif
+		return;
+	}
+#ifdef CONFIG_SDK_LITTLEFS
+	if (!b->mounted)
+		return;
+	int status = 0;
+	if (r->operation == SDK_STORAGE_FILE_SIZE) {
+		lfs_info info{};
+		status = lfs_stat(&b->fs, r->key, &info);
+		if (!status) {
+			if (info.type != LFS_TYPE_REG)
+				status = LFS_ERR_INVAL;
+			else
+				out->size = info.size;
+		}
+	} else if (r->operation == SDK_STORAGE_FILE_REMOVE)
+		status = lfs_remove(&b->fs, r->key);
+	else if (r->operation == SDK_STORAGE_FILE_MKDIR) {
+		status = lfs_mkdir(&b->fs, r->key);
+		if (status == LFS_ERR_EXIST) {
+			lfs_info info{};
+			status = lfs_stat(&b->fs, r->key, &info);
+			if (!status && info.type != LFS_TYPE_DIR)
+				status = LFS_ERR_INVAL;
+		}
+	} else if (r->operation == SDK_STORAGE_FILE_RENAME)
+		status = lfs_rename(&b->fs, r->key, r->destination);
+	else {
+		const bool write = r->operation == SDK_STORAGE_FILE_WRITE ||
+				   r->operation == SDK_STORAGE_FILE_WRITE_AT;
+		int flags = write ? LFS_O_WRONLY | LFS_O_CREAT : LFS_O_RDONLY;
+		if (r->operation == SDK_STORAGE_FILE_WRITE)
+			flags |= LFS_O_TRUNC;
+		lfs_file_t file{};
+		status = lfs_file_open(&b->fs, &file, r->key, flags);
+		if (!status) {
+			if (r->operation == SDK_STORAGE_FILE_READ_AT ||
+			    r->operation == SDK_STORAGE_FILE_WRITE_AT)
+				status = (int)lfs_file_seek(
+					&b->fs, &file, r->offset, LFS_SEEK_SET);
+			if (status >= 0) {
+				status = write ? (int)lfs_file_write(&b->fs,
+								     &file,
+								     r->data,
+								     r->size) :
+						 (int)lfs_file_read(&b->fs,
+								    &file,
+								    out->data,
+								    r->size);
+				if (status >= 0)
+					out->size = (uint32_t)status;
+				if (write && status >= 0 &&
+				    status != (int)r->size)
+					status = LFS_ERR_NOSPC;
+			}
+			const int closed = lfs_file_close(&b->fs, &file);
+			if (status >= 0 && closed)
+				status = closed;
+		}
+	}
+	out->result = storage_error(status);
 #endif
 }

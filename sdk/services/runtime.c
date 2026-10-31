@@ -20,7 +20,50 @@ typedef struct {
 	void *context;
 } storage_job_t;
 static QueueHandle_t storage_queue;
+typedef struct {
+	sdk_ui_callback_fn callback;
+	void *context;
+	size_t size;
+	unsigned char payload[SDK_UI_MESSAGE_BYTES];
+} ui_message_t;
+static QueueHandle_t ui_queue;
+static TaskHandle_t ui_owner;
+int sdk_ui_post(sdk_ui_callback_fn callback, const void *payload, size_t size,
+		void *context)
+{
+	if (!ui_queue || sdk_core_current() != 0 || !callback ||
+	    size > SDK_UI_MESSAGE_BYTES || (size && !payload) ||
+	    sdk_system_is_stopping())
+		return -1;
+	ui_message_t message = { 0 };
+	message.callback = callback;
+	message.context = context;
+	message.size = size;
+	if (size)
+		memcpy(message.payload, payload, size);
+	return xQueueSend(ui_queue, &message, 0) == pdPASS ? 0 : -1;
+}
+int sdk_ui_is_current(void)
+{
+	return sdk_core_current() == 0 && ui_owner &&
+	       xTaskGetCurrentTaskHandle() == ui_owner;
+}
+void sdk_ui_bind_current(void)
+{
+	configASSERT(!ui_owner && sdk_core_current() == 0);
+	ui_owner = xTaskGetCurrentTaskHandle();
+}
+void sdk_ui_dispatch(void)
+{
+	configASSERT(sdk_ui_is_current());
+	ui_message_t message;
+	for (unsigned i = 0;
+	     i < 16 && xQueueReceive(ui_queue, &message, 0) == pdPASS; ++i)
+		message.callback(message.payload, message.size,
+				 message.context);
+}
 void sdk_platform_end_scheduler(void);
+void sdk_buttons_start(void);
 int sdk_system_is_stopping(void)
 {
 	return sdk_host_stop_requested();
@@ -49,11 +92,8 @@ void sdk_ui_record_event(void)
 int sdk_storage_submit(const sdk_storage_request_t *request,
 		       sdk_storage_completion_fn completion, void *context)
 {
-	if (!storage_queue || sdk_core_current() != 0 || !request ||
-	    request->size > sizeof(request->data) ||
-	    !memchr(request->key, 0, sizeof(request->key)) ||
-	    !request->key[0] || request->operation < SDK_STORAGE_KV_SET ||
-	    request->operation > SDK_STORAGE_FILE_READ)
+	if (!storage_queue || sdk_core_current() != 0 ||
+	    sdk_storage_validate(request) || sdk_system_is_stopping())
 		return -1;
 	storage_job_t job = { *request, completion, context };
 	return xQueueSend(storage_queue, &job, 0) == pdPASS ? 0 : -1;
@@ -114,7 +154,9 @@ void sdk_services_start(void)
 	const sdk_task_config_t storage = { "StorageTask", 32768, 1, 0 };
 	log_queue = xQueueCreate(16, 160);
 	storage_queue = xQueueCreate(8, sizeof(storage_job_t));
-	if (!log_queue || !storage_queue ||
+	ui_queue = xQueueCreate(16, sizeof(ui_message_t));
+	sdk_buttons_start();
+	if (!log_queue || !storage_queue || !ui_queue ||
 	    sdk_task_create(&ui, sdk_ui_run, 0) ||
 	    sdk_task_create(&log, log_task, 0) ||
 	    sdk_task_create(&storage, storage_task, 0))

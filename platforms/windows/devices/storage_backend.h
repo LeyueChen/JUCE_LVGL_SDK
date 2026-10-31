@@ -1,5 +1,6 @@
 #pragma once
 #include <stddef.h>
+#include "sdk/storage.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -13,6 +14,8 @@ int sdk_backend_kv_set(void *backend, const char *key, const void *data,
 		       size_t size);
 int sdk_backend_kv_get(void *backend, const char *key, void *data,
 		       size_t capacity);
+void sdk_backend_execute(void *backend, const sdk_storage_request_t *request,
+			 sdk_storage_result_t *result);
 #ifdef __cplusplus
 }
 #endif

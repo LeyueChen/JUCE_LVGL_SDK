@@ -28,6 +28,8 @@ VS Code 任务直接调用仓库 `.venv` 中的 Python，不依赖 PowerShell �
 .\.venv\Scripts\python.exe tools/sdk.py format --check
 ```
 
+普通构建使用 `BUILD_TESTING=OFF`；`test` 在独立的 `out/<id>/<board>/Debug-tests`（或 `Release-tests`）中编译验证程序。`workspace` 显式生成 IDE 配置，保留用户自定义的 `c_cpp_properties.json`；build/clean/run 不改写索引设置。
+
 普通构建不下载、不升级依赖。`clean` 只清理所选构建目录中的编译产物，保留配置、编译数据库、依赖、运行数据和旧缓存。
 
 ## 目录和项目隔离
@@ -48,7 +50,7 @@ LVGL_JUCE/
 ├─ examples/basic/
 │  ├─ project.json
 │  └─ user/                        # SDK 的可运行示例
-├─ projects/<product>/             # 对应产品分支中的实际项目
+├─ projects/<product>/                 # 新应用/产品项目，audio 为音频演示
 │  ├─ project.json
 │  ├─ targets/windows_sim.conf     # 产品对平台的配置覆盖，可选
 │  └─ user/                        # 可移植业务、UI、协议和核职责
@@ -71,9 +73,9 @@ LVGL_JUCE/
 
 ## Git 分支和 submodule
 
-SDK 稳定线为 `sdk/main`，通用功能使用 `sdk/feature/<topic>`；产品线为 `project/<name>/main`，产品功能使用 `project/<name>/feature/<topic>`。产品从审阅后的 SDK 发布标签建立，之后主动合并新的 SDK 标签。
+完整应用/产品统一位于 `projects/<name>/user/`；SDK 稳定线为 `sdk/main`，通用功能使用 `sdk/feature/<topic>`；产品线为 `project/<name>/main`，产品功能使用 `project/<name>/feature/<topic>`。产品从审阅后的 SDK 发布标签建立，之后主动合并新的 SDK 标签。
 
-当前迁移在 `sdk/feature/submodule-project-layout`，改动保留供审阅。现有 `sdk/v0.1.0` 仍是旧目录结构，不能作为新产品创建基点；本次没有创建新提交、发布标签或产品分支。待迁移审阅并正式发布新标签后，可运行：
+SDK 完善继续在 `sdk/feature/submodule-project-layout` 开发，提交和发布由维护者手动执行。现有 `sdk/main` 和 `sdk/v0.1.0` 仍使用旧目录并跟踪 docs，不可作为新产品基点。先审阅、提交、测试，再发布新结构 SDK 标签，不改写已有标签。随后可运行：
 
 ```powershell
 # 将占位符替换成正式发布的新结构 SDK 标签
@@ -86,13 +88,26 @@ SDK 稳定线为 `sdk/main`，通用功能使用 `sdk/feature/<topic>`；产品�
 
 依赖版本的唯一依据是父仓库的 submodule gitlink；`components.json` 的版本文字仅供阅读。`sync` 执行固定版本的 `git submodule update --init --recursive`，不跟踪上游最新分支。默认同步 Windows、参考算法和推理依赖；`sync --profile embedded esp` 可同步 CherryUSB/ESP-GMF；`sync --only lvgl` 可单独同步一个库。更新依赖时需另行计划、审阅 gitlink、重跑验证并在 SDK 分支发布。
 
+切换已有分支使用 `tools/sdk.py switch <branch>`：检查工作区干净、目标布局与 docs 策略，并使用 Git 的 `--no-overwrite-ignore` 保护本地忽略文件。目标仍跟踪 docs 时拒绝切换，避免旧主线覆盖本地文档；切换后再执行 `sync` 和 `workspace --project <id>`。
+
+提交后运行 `tools/sdk.py release-check`，只读检查新结构、干净状态、docs 忽略规则和全部直接依赖 gitlink。它不创建提交/标签，不合并、不推送，也不替代 `test`。维护者手动推进尚未迁移的旧主线时，可在已审阅的新结构分支中执行以下操作，避免检出旧文件：
+
+```powershell
+# 完成提交、test 和 release-check 后；第一条返回非 0 时停止，另行审阅合并方案
+git merge-base --is-ancestor sdk/main HEAD
+# 没有 + 或 --force，仅允许快进更新主线引用，不检出旧文件
+git fetch . HEAD:sdk/main
+.\.venv\Scripts\python.exe tools/sdk.py switch sdk/main
+# 新 sdk/vX.Y.Z 标签及推送由维护者决定
+```
+
 ## 窗口显示
 
 LVGL 保持配置的原始分辨率，JUCE 窗口调整时等比缩放、居中留边，鼠标按同一变换映射。留边不接受触摸；拖出、缩放和失焦会取消按压。原始画面和显示区域截图分别保存为构建目录中的 `snapshot.png` 与 `viewport.png`。
 
 ## 音频与 MIDI
 
-主窗口顶部 **Audio / MIDI settings** 可选择音频输入/输出、通道、采样率、缓冲大小，以及 MIDI 输入和默认输出。VS Code 的 **SDK: device settings** 任务也可直接打开。设备配置按项目保存在 `.local/data/<id>/<board>/media-devices.xml`。首次运行只请求默认双通道输出，保持静音；basic 的音频监听开关默认关闭。无设备时仍能启动。
+主窗口顶部 **Audio / MIDI settings** 可选择音频输入/输出、通道、采样率、缓冲大小，以及 MIDI 输入和默认输出。VS Code 的 **SDK: device settings** 任务也可直接打开。设备配置按项目保存在 `.local/data/<id>/<board>/media-devices.xml`。首次运行只请求默认双通道输出，保持静音；audio 项目的音频监听开关默认关闭。无设备时仍能启动。
 
 ```powershell
 .\.venv\Scripts\python.exe tools/sdk.py run --project basic --show-devices
@@ -100,6 +115,19 @@ LVGL 保持配置的原始分辨率，JUCE 窗口调整时等比缩放、居中�
 ```
 
 user 通过 `sdk/audio.h` 和 `sdk/midi.h` 使用处理回调、PCM 队列及 MIDI 收发；音频回调归 HOST，CPU0 通过有界桥接交互。接口约定以公共头文件注释为准；音频回调中避免阻塞、文件 I/O、LVGL 和 FreeRTOS 调用。
+
+音频效果链在独立项目 **projects/audio** 中，项目显式创建 AudioTask。启用监听后，PCM 经 SDK 队列送到 CPU0，交给 `rea_` 效果链处理，再送回 JUCE，初始 gain 为 0.15。演示包含 gain、soft clip、RTNeural Dense JSON、参数命令和预设；它是可修改的学习实现，用户后续引擎设计不受这些接口限制。
+
+```powershell
+.\.venv\Scripts\python.exe tools/sdk.py workspace --project audio
+.\.venv\Scripts\python.exe tools/sdk.py build --project audio
+.\.venv\Scripts\python.exe tools/sdk.py run --project audio --show-devices
+.\.venv\Scripts\python.exe tools/sdk.py test --project audio
+```
+
+打开 `workspaces/audio-windows_sim-debug.code-workspace`，使用其 build/clean/run 和 F5。选择输入设备后才能处理输入音频；监听默认关闭。点击画布获取键盘焦点，A 保存预设、B 读取，MIDI CC7 调整首个 gain。预设优先 FlashDB，未启用时回退 littlefs。basic 和新建项目模板仅保留通用 SDK 示例及 JUCE 设备设置。
+
+AudioTask 运行时独占 PCM 队列，参数命令在块边界执行。模型解析/加载属于控制路径，可能造成欠载；Windows 仿真不保证硬实时。当前 RTNeural 示例只适配 mono-in/mono-out Dense 网络及 tanh/relu/sigmoid/linear，其他模型由后续项目扩展。
 
 ## 可移植边界与验证
 
@@ -112,3 +140,70 @@ Windows 已接入 LVGL 9.6.0、FreeRTOS、cJSON、littlefs、FlashDB、nanopb、
 `docs/` 中的架构、分析、验证记录和子目录文档仅保存在本地，不纳入 Git 跟踪，也不随仓库克隆分发。
 
 第一方 C/C++ 统一遵守根 `.clang-format`；VS Code 保存时使用 clang-format。第三方、生成物不参与格式化。迁移只给用户原文件末尾补了必要换行，没有改变任何格式选项。
+
+## FreeRTOS、界面与逻辑按键
+
+OSAL 是操作系统适配层，HAL 是设备适配层。当前都用于 Windows 开发。user 可以直接使用 `FreeRTOS.h` 及 task/queue/semphr/event_groups/timers/stream_buffer/message_buffer 等公共 API，也可使用 `sdk/os.h` 的便捷接口。SDK 管理内核生命周期、配置与 CPU0 上下文；原生动态/静态任务、Idle 和 TimerTask 均正确标记 CPU0。
+
+已启用抢占/时间片、静态/动态分配、队列/队列集、互斥/递归/计数信号量、3 组任务通知、事件组、软件定时器、流/消息缓冲及任务/堆/运行时间统计。`xTaskCreate` 的堆栈参数是 StackType_t 数量，`sdk_task_create` 是字节。Windows 实际栈由宿主管理，FreeRTOS 水位不能推算嵌入式实际栈占用；运行统计包含宿主调度影响。
+
+HOST 的 JUCE/音频/文件线程不调用内核 API。`FromISR` 只在 FreeRTOS 模拟中断处理函数中使用；普通 JUCE 回调不属于 ISR。CPU1/2/3 继续保留。
+
+LVGL 由 UiTask 单一持有。其他 CPU0 任务用 `sdk_ui_post()` 投递回调及最多 64 字节的复制负载；回调在 UiTask 执行，不阻塞，context 必须保持有效直到投递完成。队列满时调用者决定重试或合并。
+
+点击 LVGL 区域获取键盘焦点，方向键、Enter、Escape、A、B 映射为 `sdk/input.h` 的逻辑键。JUCE 发布电平，ButtonTask 驱动 MultiButton，单一应用消费者通过 `sdk_button_read()` 读取事件。键盘自动重复不产生重复按下；失焦会取消手势。未来 GPIO provider 只需实现 `sdk/input_backend.h`。扫描/消抖/点击/长按阈值由 Kconfig 管理；扫描间隔必须是整数个 RTOS tick。
+
+## 存储和资源
+
+`sdk/storage.h` 提供复制请求的异步服务，StorageTask 排队、HOST worker 执行 FlashDB/littlefs 操作。支持 KV set/get/size/delete，文件读写、偏移读写、大小、目录、删除和重命名。每次最多 256 字节，大模型、IR、预设集合通过 offset 分块传输；写完临时文件后 rename 原子替换资源。KV 空间不足时报告错误，不静默截断。
+
+默认 littlefs 为 4096 × 128（512 KiB）模拟 NOR，FlashDB 为 4096 × 16（64 KiB），可通过 menuconfig 调整。已有镜像必须匹配容量，变化需另行迁移；SDK 不自动格式化已有损坏/尺寸不符的 littlefs 镜像，也不清理运行数据。存储回调的结果只在回调期间有效，回调不得阻塞或修改 LVGL。
+
+CI 指提交/推送后在服务器自动构建和测试，目前暂不配置。实际硬件、CherryUSB/ESP 新适配暂缓；压力测试、热插拔和实机后端随后续开发逐步完善。
+
+## 可复制的应用模块
+
+```text
+projects/audio/user/
+├─ CMakeLists.txt              # 发现和组合模块，不登记内部源文件
+├─ app/                       # SDK 生命周期、MIDI/按键/存储与模块的接线
+│  └─ CMakeLists.txt
+├─ cores/
+│  └─ CMakeLists.txt
+├─ protocol/
+│  └─ CMakeLists.txt
+├─ rakure_ea/
+│  ├─ CMakeLists.txt
+│  ├─ include/rea/rea.h        # rea_ 函数/类型，REA_ 宏；通用链处理接口
+│  ├─ include/rea/rea_audio.h  # SDK provider 的音频任务/控制接口
+│  ├─ src/                    # 链和 RTNeural 演示
+│  ├─ ports/sdk/              # FreeRTOS/SDK 音频任务、预设与参数接线
+│  └─ tests/CMakeLists.txt
+└─ rakure_gui/
+   ├─ CMakeLists.txt
+   ├─ include/rakure_gui/
+   └─ src/                    # 仅依赖 LVGL，用 actions 回调与应用交互
+```
+
+每个独立模块在根目录维护 CMakeLists，使用当前模块的相对路径列出源码，通过 `target_include_directories(... PUBLIC ...)` 导出公共头文件，通过 target 链接声明依赖。内部 src/include 文件夹由模块的构建入口管理。
+
+SDK 项目的 user/CMakeLists 使用：
+
+```cmake
+include("${CMAKE_SOURCE_DIR}/cmake/UserModules.cmake")
+sdk_add_user_modules(sdk_user)
+```
+
+发现范围仅为 `user/*/CMakeLists.txt`，模块用目录属性声明需要组合的目标：
+
+```cmake
+add_library(my_module STATIC src/my_module.c)
+target_include_directories(my_module PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+set_property(DIRECTORY PROPERTY SDK_USER_MODULE_TARGET my_module)
+```
+
+复制整个模块文件夹到另一个使用此约定的项目 user/ 后，重新 build/configure 即可；Ninja 也会检测新增模块入口。父项目不需要逐个登记文件。新增源码时只修改该模块自己的 CMakeLists。自动接入负责构建和索引；运行时仍由应用连接模块入口，例如在 user_app_start 调用 rea_audio_start，在 UiTask 的 user_ui_create 调用 rakure_gui_create，具体接线可参考 audio 的 app/app.c。模块依赖必须由接收项目提供；目标名不能重复，移除模块前先解除应用对它的直接调用。
+
+`rakure::ea` 为通用处理目标，`rakure::ea_sdk` 为可选 SDK provider，`rakure::gui` 为 LVGL GUI。在普通 CMake 工程中可用 add_subdirectory 接入：设置 `REA_BUILD_SDK_PORT=OFF`，关闭 RTNeural 或通过 `REA_RTNEURAL_TARGET` 提供目标；GUI 通过 `RAKURE_GUI_LVGL_TARGET` 接收 LVGL 目标。迁移到其他 SDK 时对接 provider，通用链/GUI 不直接依赖 JUCE 或 Windows。
+
+VS Code 索引来自接收项目的实际编译数据库。复制模块后若需要刷新浏览路径，可执行 `workspace --project <id>`；生成器保留已有自定义 c_cpp_properties.json。各项目继续使用独立编译目录、数据和符号缓存。

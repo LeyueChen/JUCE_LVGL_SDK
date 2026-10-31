@@ -53,12 +53,36 @@ config SDK_LITTLEFS
 config SDK_FLASHDB
     bool "FlashDB"
     default y
+config SDK_LITTLEFS_BLOCK_COUNT
+    int "littlefs 4096-byte blocks (existing images require matching capacity)"
+    range 128 8192
+    default 128
+config SDK_FLASHDB_SECTORS
+    int "FlashDB 4096-byte sectors"
+    range 16 1024
+    default 16
 config SDK_NANOPB
     bool "nanopb runtime"
     default y
 config SDK_MULTIBUTTON
     bool "MultiButton"
     default y
+config SDK_BUTTON_SCAN_MS
+    int "Button scan interval (ms)"
+    range 5 20
+    default 5
+config SDK_BUTTON_DEBOUNCE_TICKS
+    int "Button debounce scans"
+    range 1 7
+    default 3
+config SDK_BUTTON_CLICK_MS
+    int "Button double-click window (ms)"
+    range 100 600
+    default 300
+config SDK_BUTTON_LONG_MS
+    int "Button long-press threshold (ms)"
+    range 700 3000
+    default 1000
 config SDK_EASYLOGGER
     bool "EasyLogger"
     default y

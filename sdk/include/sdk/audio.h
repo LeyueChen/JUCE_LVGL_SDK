@@ -44,6 +44,11 @@ typedef struct {
 void sdk_audio_set_processor(const sdk_audio_processor_t *processor);
 /* Capture is opt-in. Reading is nonblocking; disabling leaves queued data to drain. */
 void sdk_audio_capture_enable(int enabled);
+/* Atomic output gate for the RTOS engine. Muted callbacks drain queued output
+ * and emit silence. Does not stop the device or affect capture. */
+void sdk_audio_playback_mute(int muted);
+/* Request a bounded callback-side discard of pending queued playback. */
+void sdk_audio_playback_clear(void);
 int sdk_audio_get_format(sdk_audio_format_t *format);
 sdk_audio_stats_t sdk_audio_stats(void);
 int sdk_audio_read(sdk_audio_packet_t *packet);

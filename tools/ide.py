@@ -98,10 +98,11 @@ def generate(root: Path, project: Project, board='windows_sim', configuration='D
     }
     property_path = project.directory / '.vscode/c_cpp_properties.json'
     if property_path.exists() and json.loads(property_path.read_text(encoding='utf-8')) != properties:
-        raise RuntimeError(f'Review custom index configuration before regenerating {property_path}')
-    write_json(property_path, properties)
+        print(f'Preserved custom index configuration: {property_path}')
+    else:
+        write_json(property_path, properties)
     tasks = []
-    for command in ('build', 'clean', 'run', 'test', 'configure', 'menuconfig'):
+    for command in ('build', 'clean', 'run', 'test', 'configure', 'menuconfig', 'workspace'):
         task = {
             'label': 'SDK: ' + command, 'type': 'process', 'command': str(root / '.venv/Scripts/python.exe'),
             'args': [str(root / 'tools/sdk.py'), command,

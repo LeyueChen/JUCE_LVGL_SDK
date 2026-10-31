@@ -9,6 +9,7 @@ import sys
 import dependencies
 import ide
 import projects
+import repository
 from toolchain import ROOT, build_env, compiler_arguments, run, tool, vs_root
 
 
@@ -17,6 +18,9 @@ def configure(args, interactive=False):
     project = projects.resolve(ROOT, args.project)
     board = ROOT / 'boards' / args.board
     output = projects.output_dir(ROOT, project, args.board, args.config)
+    testing = args.command == 'test'
+    if testing:
+        output = output.with_name(output.name + '-tests')
     generated = output / 'generated'
     extra_config = project.directory / 'targets' / (args.board + '.conf')
     generate(ROOT, project.user, board, generated, interactive, project_id=project.id,
@@ -32,9 +36,11 @@ def configure(args, interactive=False):
     run([tool('cmake'), '-S', ROOT, '-B', output, '-G', 'Ninja',
          f'-DCMAKE_MAKE_PROGRAM={tool("ninja")}', f'-DPython_EXECUTABLE={sys.executable}',
          f'-DCMAKE_BUILD_TYPE={args.config}', f'-DSDK_PROJECT_DIR={project.directory}',
-         f'-DSDK_GENERATED_DIR={generated}', f'-DSDK_BOARD={args.board}', *extra], env=env)
-    workspace = ide.generate(ROOT, project, args.board, args.config, compiler)
-    print(f'Workspace: {workspace}')
+         f'-DSDK_GENERATED_DIR={generated}', f'-DSDK_BOARD={args.board}',
+         f'-DBUILD_TESTING={"ON" if testing else "OFF"}', *extra], env=env)
+    if args.command == 'workspace':
+        workspace = ide.generate(ROOT, project, args.board, args.config, compiler)
+        print(f'Workspace: {workspace}')
     return project, output
 
 
@@ -67,7 +73,10 @@ def new_project(args):
     metadata = subprocess.run(['git', '-C', str(ROOT), 'show', args.sdk_ref + ':examples/basic/project.json'], capture_output=True, text=True)
     if metadata.returncode:
         raise RuntimeError('Selected tag does not contain the new project layout')
-    run(['git', '-C', ROOT, 'switch', '-c', f'project/{args.name}/main', args.sdk_ref])
+    modules = subprocess.run(['git', '-C', str(ROOT), 'cat-file', '-e', args.sdk_ref + ':cmake/UserModules.cmake'], capture_output=True)
+    if modules.returncode:
+        raise RuntimeError('Selected SDK tag predates modular project support; publish a reviewed modular SDK release first')
+    repository.switch(ROOT, args.sdk_ref, create=f'project/{args.name}/main')
     project = projects.scaffold(ROOT, args.name)
     workspace = ide.generate(ROOT, project)
     print(f'Created {project.directory}\nOpen {workspace}; product changes are ready for review and commit.')
@@ -87,6 +96,9 @@ def main():
     sub = parser.add_subparsers(dest='command', required=True)
     sub.add_parser('doctor')
     sub.add_parser('projects')
+    sub.add_parser('release-check', help='Read-only audit before a manual SDK release')
+    switch = sub.add_parser('switch', help='Switch a branch while protecting ignored local docs')
+    switch.add_argument('ref')
     fmt = sub.add_parser('format')
     fmt.add_argument('--check', action='store_true')
     new = sub.add_parser('new-project', help='Create a product branch in this checkout from a reviewed SDK tag')
@@ -109,6 +121,10 @@ def main():
         print(json.dumps({'python': sys.executable, 'cmake': tool('cmake'), 'ninja': tool('ninja'), 'clang-format': tool('clang-format'), 'visual_studio': str(vs_root())}, indent=2))
     elif args.command == 'projects':
         print(json.dumps([{'id': project.id, 'path': project.directory.relative_to(ROOT).as_posix()} for project in projects.discover(ROOT)], indent=2))
+    elif args.command == 'release-check':
+        print(json.dumps(repository.release_check(ROOT), indent=2))
+    elif args.command == 'switch':
+        repository.switch(ROOT, args.ref)
     elif args.command == 'sync':
         dependencies.sync(ROOT, args.profile, args.only)
     elif args.command == 'new-project':

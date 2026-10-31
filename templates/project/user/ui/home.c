@@ -1,5 +1,7 @@
 #include <lvgl.h>
 #include "sdk/system.h"
+#include "sdk/input.h"
+#include "sdk/ui.h"
 #include "sdk/os.h"
 #include "sdk/log.h"
 #include "sdk/storage.h"
@@ -10,14 +12,6 @@ static lv_obj_t *stats_label;
 static lv_obj_t *counter_label;
 static unsigned clicks;
 static uint64_t last_update;
-static void on_monitor(lv_event_t *event)
-{
-	lv_obj_t *button = lv_event_get_target_obj(event);
-	int enabled = lv_obj_has_state(button, LV_STATE_CHECKED);
-	user_media_monitor_enable(enabled);
-	lv_label_set_text(lv_obj_get_child(button, 0),
-			  enabled ? "Audio monitor: ON" : "Audio monitor: OFF");
-}
 static void on_click(lv_event_t *event)
 {
 	(void)event;
@@ -66,24 +60,14 @@ void user_ui_create(void)
 	lv_obj_t *label = lv_label_create(button);
 	lv_label_set_text(label, "Test portable UI event");
 	lv_obj_center(label);
-#ifdef CONFIG_SDK_AUDIO
-	lv_obj_t *monitor_button = lv_button_create(screen);
-	lv_obj_set_size(monitor_button, 224, 56);
-	lv_obj_align(monitor_button, LV_ALIGN_LEFT_MID, 288, 22);
-	lv_obj_add_flag(monitor_button, LV_OBJ_FLAG_CHECKABLE);
-	lv_obj_add_event_cb(monitor_button, on_monitor, LV_EVENT_VALUE_CHANGED,
-			    NULL);
-	lv_obj_t *monitor_label = lv_label_create(monitor_button);
-	lv_label_set_text(monitor_label, "Audio monitor: OFF");
-	lv_obj_center(monitor_label);
-#endif
+
 	counter_label = lv_label_create(screen);
 	lv_label_set_text(counter_label, "Button events: 0");
 	lv_obj_align(counter_label, LV_ALIGN_BOTTOM_LEFT, 32, -74);
 	lv_obj_t *footer = lv_label_create(screen);
 	lv_label_set_text(
 		footer,
-		"user/ owns the product. SDK owns dependencies and platform integration.");
+		"Keys: arrows / Enter / Escape / A / B (click canvas first)");
 	lv_obj_align(footer, LV_ALIGN_BOTTOM_LEFT, 32, -30);
 }
 void user_ui_tick(void)
@@ -99,4 +83,14 @@ void user_ui_tick(void)
 		(unsigned long)now, (unsigned long)stats.heartbeats,
 		(unsigned long)stats.frames, stats.storage_completed,
 		stats.storage_failed);
+}
+
+void user_button_event(const void *payload, size_t size, void *context)
+{
+	(void)context;
+	if (size != sizeof(sdk_button_event_t))
+		return;
+	const sdk_button_event_t *event = payload;
+	lv_label_set_text_fmt(counter_label, "Key %u / action %u",
+			      (unsigned)event->button, (unsigned)event->action);
 }

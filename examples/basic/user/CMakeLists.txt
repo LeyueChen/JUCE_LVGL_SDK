@@ -1,4 +1,2 @@
-add_library(sdk_user STATIC
-    cores/core_roles.c cores/core_cpu_0.c cores/core_cpu_1.c
-    cores/core_cpu_2.c cores/core_cpu_3.c app/app.c ui/home.c media/media.c)
-target_link_libraries(sdk_user PUBLIC sdk::runtime)
+include("${CMAKE_SOURCE_DIR}/cmake/UserModules.cmake")
+sdk_add_user_modules(sdk_user)

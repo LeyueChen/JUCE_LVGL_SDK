@@ -11,10 +11,51 @@
 #include <cJSON.h>
 #endif
 extern "C" void sdk_services_start(void);
+#ifdef SDK_DIAGNOSTICS
+extern "C" void sdk_rtos_self_test_start(void);
+#endif
 namespace
 {
 std::atomic<bool> finished{ false };
 std::thread scheduler;
+struct TaskStart {
+	TaskFunction_t entry;
+	void *context;
+};
+DWORD WINAPI task_trampoline(void *opaque)
+{
+	const auto start = *static_cast<TaskStart *>(opaque);
+	HeapFree(GetProcessHeap(), 0, opaque);
+	sdk_core_enter(0);
+	start.entry(start.context);
+	sdk_port_assert("FreeRTOS task returned; call vTaskDelete(NULL)", 0);
+	return 0;
+}
+}
+// Applied to every kernel-created task, including native/static tasks, Idle and
+// TimerTask. JUCE threads retain SDK_CORE_HOST and never enter the kernel.
+extern "C" void *sdk_win_create_task_thread(TaskFunction_t entry, void *context)
+{
+	auto *start = static_cast<TaskStart *>(
+		HeapAlloc(GetProcessHeap(), 0, sizeof(TaskStart)));
+	if (!start)
+		return nullptr;
+	*start = { entry, context };
+	auto handle = CreateThread(
+		nullptr, 1024, task_trampoline, start,
+		CREATE_SUSPENDED | STACK_SIZE_PARAM_IS_A_RESERVATION, nullptr);
+	if (!handle)
+		HeapFree(GetProcessHeap(), 0, start);
+	return handle;
+}
+extern "C" uint32_t sdk_port_runtime_counter(void)
+{
+	LARGE_INTEGER count{}, frequency{};
+	QueryPerformanceCounter(&count);
+	QueryPerformanceFrequency(&frequency);
+	return uint32_t((count.QuadPart / frequency.QuadPart) * 1000000 +
+			(count.QuadPart % frequency.QuadPart) * 1000000 /
+				frequency.QuadPart);
 }
 static void boot(void *)
 {
@@ -24,6 +65,9 @@ static void boot(void *)
 	cJSON_InitHooks(&hooks);
 #endif
 	sdk_services_start();
+#ifdef SDK_DIAGNOSTICS
+	sdk_rtos_self_test_start();
+#endif
 	sdk_core_boot_primary(user_core_roles());
 }
 extern "C" void sdk_runtime_start(void)

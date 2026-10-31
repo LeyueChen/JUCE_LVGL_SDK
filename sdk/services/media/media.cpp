@@ -1,15 +1,19 @@
 #include "backend.h"
-#include "queue.h"
+#include "bounded_queue.h"
 #include "sdk_config.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>
 namespace
 {
+#ifdef CONFIG_SDK_AUDIO
 sdk_media::Queue<sdk_audio_packet_t, CONFIG_SDK_AUDIO_QUEUE_BLOCKS> capture,
 	playback;
+#endif
+#ifdef CONFIG_SDK_MIDI
 sdk_media::Queue<sdk_midi_message_t, CONFIG_SDK_MIDI_QUEUE_MESSAGES> midi_input,
 	midi_output;
+#endif
 std::atomic<const sdk_audio_processor_t *> processor{ nullptr };
 std::atomic<bool> capture_enabled{ false }, playback_enabled{ false };
 std::atomic<uint32_t> sequence{ 0 }, rate{ 0 }, block_size{ 0 };
@@ -20,9 +24,13 @@ std::atomic<unsigned> midi_inputs{ 0 }, midi_outputs{ 0 }, midi_enabled{ 0 };
 std::atomic<bool> midi_available{ false };
 std::atomic<uint64_t> received{ 0 }, sent{ 0 }, midi_input_drops{ 0 },
 	midi_output_drops{ 0 };
+#ifdef CONFIG_SDK_AUDIO
 sdk_audio_packet_t
 	current_output{}; // Audio callback owns this packet and offset.
 unsigned output_offset = 0;
+#endif
+std::atomic<bool> muted{ false };
+std::atomic<bool> clear_playback{ false };
 bool midi_valid(const sdk_midi_message_t &m)
 {
 	if (m.size == 0 || m.size > SDK_MIDI_MAX_BYTES || m.data[0] < 0x80)
@@ -57,6 +65,14 @@ bool midi_valid(const sdk_midi_message_t &m)
 extern "C" void sdk_audio_set_processor(const sdk_audio_processor_t *binding)
 {
 	processor.store(binding, std::memory_order_release);
+}
+extern "C" void sdk_audio_playback_mute(int value)
+{
+	muted.store(value != 0);
+}
+extern "C" void sdk_audio_playback_clear(void)
+{
+	clear_playback.store(true);
 }
 extern "C" void sdk_audio_capture_enable(int enabled)
 {
@@ -99,6 +115,10 @@ extern "C" int sdk_audio_read(sdk_audio_packet_t *packet)
 }
 extern "C" int sdk_audio_write(const sdk_audio_packet_t *packet)
 {
+#ifndef CONFIG_SDK_AUDIO
+	(void)packet;
+	return SDK_MEDIA_UNAVAILABLE;
+#else
 	if (!packet || !packet->frames ||
 	    packet->frames > SDK_AUDIO_BLOCK_FRAMES || !packet->channels ||
 	    packet->channels > SDK_AUDIO_MAX_CHANNELS)
@@ -122,6 +142,7 @@ extern "C" int sdk_audio_write(const sdk_audio_packet_t *packet)
 		return SDK_MEDIA_FULL;
 	playback_enabled.store(true);
 	return 0;
+#endif
 }
 extern "C" void sdk_media_audio_start(unsigned sample_rate, unsigned inputs,
 				      unsigned outputs, unsigned frames)
@@ -140,7 +161,9 @@ extern "C" void sdk_media_audio_start(unsigned sample_rate, unsigned inputs,
 	block_size.store(frames);
 	running.store(valid);
 	playback_enabled.store(false);
+#ifdef CONFIG_SDK_AUDIO
 	current_output.frames = output_offset = 0;
+#endif
 	sequence.fetch_add(1, std::memory_order_release);
 }
 extern "C" void sdk_media_audio_stop(void)
@@ -148,7 +171,9 @@ extern "C" void sdk_media_audio_stop(void)
 	sequence.fetch_add(1);
 	running.store(false);
 	playback_enabled.store(false);
+#ifdef CONFIG_SDK_AUDIO
 	current_output.frames = output_offset = 0;
+#endif
 	sequence.fetch_add(1, std::memory_order_release);
 }
 extern "C" void sdk_media_audio_process(const float *const *input,
@@ -159,6 +184,15 @@ extern "C" void sdk_media_audio_process(const float *const *input,
 	for (unsigned c = 0; c < outputs; ++c)
 		if (output && output[c])
 			std::fill_n(output[c], frames, 0.0f);
+#ifdef CONFIG_SDK_AUDIO
+	if (clear_playback.exchange(false)) {
+		current_output.frames = output_offset = 0;
+		sdk_audio_packet_t discarded{};
+		for (unsigned i = 0; i < CONFIG_SDK_AUDIO_QUEUE_BLOCKS &&
+				     playback.pop(discarded);
+		     ++i) {
+		}
+	}
 	sdk_audio_format_t f{};
 	if (sdk_audio_get_format(&f) || !f.running ||
 	    inputs != f.input_channels || outputs != f.output_channels)
@@ -192,6 +226,13 @@ extern "C" void sdk_media_audio_process(const float *const *input,
 						   inputs, outputs,
 						   frames, f.sample_rate_hz };
 		binding->process(&b, binding->context);
+	} else if (muted.load()) {
+		current_output.frames = output_offset = 0;
+		sdk_audio_packet_t discarded{};
+		for (unsigned i = 0; i < CONFIG_SDK_AUDIO_QUEUE_BLOCKS &&
+				     playback.pop(discarded);
+		     ++i) {
+		}
 	} else if (playback_enabled.load()) {
 		unsigned written = 0;
 		for (unsigned tries = 0;
@@ -232,6 +273,11 @@ extern "C" void sdk_media_audio_process(const float *const *input,
 						       std::clamp(output[c][i],
 								  -1.0f, 1.0f) :
 						       0.0f;
+#else
+	(void)input;
+	(void)inputs;
+	(void)timestamp;
+#endif
 }
 extern "C" void sdk_media_midi_devices(unsigned inputs, unsigned outputs,
 				       unsigned enabled, int available)
@@ -284,6 +330,10 @@ extern "C" int sdk_midi_read(sdk_midi_message_t *message)
 }
 extern "C" int sdk_midi_send(const sdk_midi_message_t *message)
 {
+#ifndef CONFIG_SDK_MIDI
+	(void)message;
+	return SDK_MEDIA_UNAVAILABLE;
+#else
 	if (!message || message->port_id != 0 || !midi_valid(*message))
 		return SDK_MEDIA_INVALID;
 	if (!midi_available.load())
@@ -293,10 +343,16 @@ extern "C" int sdk_midi_send(const sdk_midi_message_t *message)
 		return SDK_MEDIA_FULL;
 	}
 	return 0;
+#endif
 }
 extern "C" int sdk_media_midi_output(sdk_midi_message_t *message)
 {
+#ifdef CONFIG_SDK_MIDI
 	return message && midi_output.pop(*message) ? 1 : 0;
+#else
+	(void)message;
+	return SDK_MEDIA_UNAVAILABLE;
+#endif
 }
 extern "C" void sdk_media_midi_delivered(int success)
 {

@@ -41,6 +41,13 @@ class ProjectContracts(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, 'Invalid portable'):
             projects.load(a.directory)
 
+    def test_projects_default_and_examples_are_both_discovered(self):
+        a = projects.scaffold(self.root, 'new-app')
+        b = projects.scaffold(self.root, 'reference', self.root / 'examples/reference')
+        self.assertEqual(a.directory, self.root / 'projects/new-app')
+        self.assertEqual(projects.resolve(self.root, 'reference'), b)
+        self.assertEqual({p.id for p in projects.discover(self.root)}, {'new-app', 'reference'})
+
     def test_each_workspace_has_own_compile_database_and_symbol_cache(self):
         settings = []
         for name in ('panel-a', 'panel-b'):
@@ -86,6 +93,17 @@ class ProjectContracts(unittest.TestCase):
         generate(self.root, b.user, self.root / 'boards/windows_sim', b_out, project_id=b.id)
         self.assertEqual(json.loads((a_out / 'config.json').read_text())['SDK_SCREEN_WIDTH'], '960')
         self.assertEqual(json.loads((b_out / 'config.json').read_text())['SDK_SCREEN_WIDTH'], '800')
+
+    def test_custom_index_properties_survive_regeneration(self):
+        project = projects.scaffold(self.root, 'custom')
+        ide.generate(self.root, project)
+        path = project.directory / '.vscode/c_cpp_properties.json'
+        value = json.loads(path.read_text())
+        value['configurations'][0]['compilerPath'] = 'my-cl.exe'
+        path.write_text(json.dumps(value))
+        before = path.read_bytes()
+        ide.generate(self.root, project)
+        self.assertEqual(path.read_bytes(), before)
 
 
 if __name__ == '__main__':
