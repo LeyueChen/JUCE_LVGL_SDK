@@ -176,8 +176,9 @@ projects/audio/user/
 │  ├─ CMakeLists.txt
 │  ├─ include/rea/rea.h        # rea_ 函数/类型，REA_ 宏；通用链处理接口
 │  ├─ include/rea/rea_audio.h  # SDK provider 的音频任务/控制接口
-│  ├─ src/                    # 链和 RTNeural 演示
+│  ├─ src/                    # C 效果链和禁用 RTNeural 时的 C stub
 │  ├─ ports/sdk/              # FreeRTOS/SDK 音频任务、预设与参数接线
+│  ├─ ports/rtneural/         # 必要的 C++ 库适配，通过 rea.h 提供 C 接口
 │  └─ tests/CMakeLists.txt
 └─ rakure_gui/
    ├─ CMakeLists.txt
@@ -205,5 +206,9 @@ set_property(DIRECTORY PROPERTY SDK_USER_MODULE_TARGET my_module)
 复制整个模块文件夹到另一个使用此约定的项目 user/ 后，重新 build/configure 即可；Ninja 也会检测新增模块入口。父项目不需要逐个登记文件。新增源码时只修改该模块自己的 CMakeLists。自动接入负责构建和索引；运行时仍由应用连接模块入口，例如在 user_app_start 调用 rea_audio_start，在 UiTask 的 user_ui_create 调用 rakure_gui_create，具体接线可参考 audio 的 app/app.c。模块依赖必须由接收项目提供；目标名不能重复，移除模块前先解除应用对它的直接调用。
 
 `rakure::ea` 为通用处理目标，`rakure::ea_sdk` 为可选 SDK provider，`rakure::gui` 为 LVGL GUI。在普通 CMake 工程中可用 add_subdirectory 接入：设置 `REA_BUILD_SDK_PORT=OFF`，关闭 RTNeural 或通过 `REA_RTNEURAL_TARGET` 提供目标；GUI 通过 `RAKURE_GUI_LVGL_TARGET` 接收 LVGL 目标。迁移到其他 SDK 时对接 provider，通用链/GUI 不直接依赖 JUCE 或 Windows。
+
+项目、示例、模板及其测试中能够用 C 实现的第一方源码统一使用 `.c`，以 C11 为基础。效果链、GUI、FreeRTOS 音频任务、应用和 CPU 入口均按 C 编译。公共头文件兼容 C；C++ 调用方使用 `extern "C"` 保护。JUCE、系统适配以及 RTNeural 等 C++ 库的必要封装保留 `.cpp`，并集中在适配目录，不向业务接口暴露 C++ 类型。
+
+复制通用效果链和 GUI 到仅启用 C 的工程时，设置 `REA_BUILD_SDK_PORT=OFF`、`REA_ENABLE_RTNEURAL=OFF`，接收工程可使用 `project(MyApp LANGUAGES C)`。启用 RTNeural 时接收工程需同时启用 CXX；由 C 编写的应用仍通过原有 `rea_` 接口调用，最终链接包含 C++ 运行库。SDK 音频任务通过 C11 原子操作保持 CPU0/HOST 并发安全，当前 MSVC 由模块单独添加 `/experimental:c11atomics`；该选项不施加到通用链、GUI 或第三方源码。通用链在控制路径使用 C 标准堆分配，音频处理路径不分配内存。
 
 VS Code 索引来自接收项目的实际编译数据库。复制模块后若需要刷新浏览路径，可执行 `workspace --project <id>`；生成器保留已有自定义 c_cpp_properties.json。各项目继续使用独立编译目录、数据和符号缓存。

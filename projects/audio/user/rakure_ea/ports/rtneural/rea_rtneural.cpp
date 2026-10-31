@@ -1,5 +1,5 @@
 #include "rea/rea.h"
-#if REA_USE_RTNEURAL
+/* The optional C++ library is isolated here; the public API remains C. */
 #include <RTNeural/RTNeural.h>
 #include <array>
 #include <cmath>
@@ -79,11 +79,9 @@ bool validate(nlohmann::json &j)
 	return input == 1;
 }
 }
-#endif
 extern "C" int rea_chain_append_rtneural(rea_chain_t *chain, const char *text,
 					 size_t size)
 {
-#if REA_USE_RTNEURAL
 	if (!chain || !text || !size || size > 262144)
 		return -1;
 	try {
@@ -107,10 +105,4 @@ extern "C" int rea_chain_append_rtneural(rea_chain_t *chain, const char *text,
 	} catch (...) {
 		return -1;
 	}
-#else
-	(void)chain;
-	(void)text;
-	(void)size;
-	return -1;
-#endif
 }

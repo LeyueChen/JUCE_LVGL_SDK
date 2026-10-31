@@ -7,27 +7,29 @@
 #include "FreeRTOS.h"
 #include "queue.h"
 #include "task.h"
-#include <atomic>
-#include <algorithm>
+#include <stdbool.h>
+#include <stdatomic.h>
+
 #ifdef CONFIG_SDK_AUDIO
-namespace
-{
-struct Command {
+typedef struct {
 	rea_audio_control_fn fn;
 	void *context;
 	rea_audio_control_completion_fn completion;
-};
-QueueHandle_t commands;
-std::atomic<bool> enabled{ false };
-std::atomic<bool> applied_enabled{ false };
-void audio_task(void *)
+} rea_command_t;
+
+static QueueHandle_t commands;
+static atomic_bool enabled;
+static atomic_bool applied_enabled;
+
+static void audio_task(void *context)
 {
-	auto *chain = rea_chain_create();
+	(void)context;
+	rea_chain_t *chain = rea_chain_create();
 	configASSERT(chain && rea_chain_append_gain(chain, 0.15f) >= 0);
-	sdk_audio_packet_t input{}, output{};
+	sdk_audio_packet_t input = { 0 }, output = { 0 };
 	uint32_t generation = 0;
 	bool prepared = false, was_enabled = false;
-	Command command{};
+	rea_command_t command = { 0 };
 	while (!sdk_system_is_stopping()) {
 		for (unsigned i = 0;
 		     i < 8 && xQueueReceive(commands, &command, 0) == pdPASS;
@@ -36,7 +38,7 @@ void audio_task(void *)
 			if (command.completion)
 				command.completion(result, command.context);
 		}
-		const bool active = enabled.load();
+		const bool active = atomic_load(&enabled);
 		if (active != was_enabled) {
 			sdk_audio_capture_enable(active);
 			if (active)
@@ -51,13 +53,13 @@ void audio_task(void *)
 			}
 			rea_chain_reset(chain);
 			was_enabled = active;
-			applied_enabled.store(active);
+			atomic_store(&applied_enabled, active);
 		}
 		if (!active) {
 			sdk_delay_ms(1);
 			continue;
 		}
-		sdk_audio_format_t format{};
+		sdk_audio_format_t format = { 0 };
 		if (sdk_audio_get_format(&format) || !format.running ||
 		    !format.output_channels) {
 			sdk_delay_ms(1);
@@ -72,8 +74,7 @@ void audio_task(void *)
 		unsigned processed = 0;
 		while (processed < 16 && sdk_audio_read(&input) == 1) {
 			++processed;
-			if (!active || !prepared ||
-			    input.generation != generation)
+			if (!prepared || input.generation != generation)
 				continue;
 			output.generation = generation;
 			output.sample_rate_hz = format.sample_rate_hz;
@@ -94,8 +95,8 @@ void audio_task(void *)
 		}
 		sdk_delay_ms(1);
 	}
-	enabled.store(false);
-	applied_enabled.store(false);
+	atomic_store(&enabled, false);
+	atomic_store(&applied_enabled, false);
 	sdk_audio_capture_enable(0);
 	sdk_audio_playback_mute(1);
 	while (xQueueReceive(commands, &command, 0) == pdPASS)
@@ -103,33 +104,38 @@ void audio_task(void *)
 			command.completion(SDK_MEDIA_UNAVAILABLE,
 					   command.context);
 	rea_chain_destroy(chain);
-	vTaskDelete(nullptr);
-}
+	vTaskDelete(NULL);
 }
 #endif
-extern "C" int rea_audio_start(void)
+
+int rea_audio_start(void)
 {
 #ifdef CONFIG_SDK_AUDIO
 	if (sdk_core_current() != 0 || sdk_system_is_stopping())
 		return SDK_MEDIA_INVALID;
+	/* MSVC reports "sometimes lock-free"; check these actual objects. */
+	if (!atomic_is_lock_free(&enabled) ||
+	    !atomic_is_lock_free(&applied_enabled))
+		return SDK_MEDIA_UNAVAILABLE;
 	if (commands)
 		return SDK_MEDIA_BUSY;
-	commands = xQueueCreate(8, sizeof(Command));
+	commands = xQueueCreate(8, sizeof(rea_command_t));
 	const sdk_task_config_t task = { "AudioTask", 65536, 4, 0 };
-	configASSERT(commands && !sdk_task_create(&task, audio_task, nullptr));
+	configASSERT(commands && !sdk_task_create(&task, audio_task, NULL));
 	return 0;
 #else
 	return SDK_MEDIA_UNAVAILABLE;
 #endif
 }
-extern "C" int rea_audio_control(rea_audio_control_fn fn, void *context,
-				 rea_audio_control_completion_fn completion)
+
+int rea_audio_control(rea_audio_control_fn fn, void *context,
+		      rea_audio_control_completion_fn completion)
 {
 #ifdef CONFIG_SDK_AUDIO
 	if (!commands || !fn || sdk_core_current() != 0 ||
 	    sdk_system_is_stopping())
 		return SDK_MEDIA_INVALID;
-	Command command{ fn, context, completion };
+	rea_command_t command = { fn, context, completion };
 	return xQueueSend(commands, &command, 0) == pdPASS ? 0 : SDK_MEDIA_FULL;
 #else
 	(void)fn;
@@ -138,22 +144,27 @@ extern "C" int rea_audio_control(rea_audio_control_fn fn, void *context,
 	return SDK_MEDIA_UNAVAILABLE;
 #endif
 }
-extern "C" int rea_audio_enable(int active)
+
+int rea_audio_enable(int active)
 {
 #ifdef CONFIG_SDK_AUDIO
 	if (!commands || sdk_core_current() != 0 || sdk_system_is_stopping())
 		return SDK_MEDIA_INVALID;
-	enabled.store(active != 0);
+	atomic_store(&enabled, active != 0);
 	return 0;
 #else
 	(void)active;
 	return SDK_MEDIA_UNAVAILABLE;
 #endif
 }
-extern "C" int rea_audio_enabled(void)
+
+int rea_audio_enabled(void)
 {
 #ifdef CONFIG_SDK_AUDIO
-	return applied_enabled.load() ? 1 : 0;
+	return atomic_is_lock_free(&applied_enabled) &&
+			       atomic_load(&applied_enabled) ?
+		       1 :
+		       0;
 #else
 	return 0;
 #endif
