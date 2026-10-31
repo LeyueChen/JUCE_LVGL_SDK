@@ -30,6 +30,19 @@ VS Code 任务直接调用仓库 `.venv` 中的 Python，不依赖 PowerShell �
 
 普通构建使用 `BUILD_TESTING=OFF`；`test` 在独立的 `out/<id>/<board>/Debug-tests`（或 `Release-tests`）中编译验证程序。`workspace` 显式生成 IDE 配置，保留用户自定义的 `c_cpp_properties.json`；build/clean/run 不改写索引设置。
 
+已通过且与本次改动无关的测试不重复运行。平时按改动选择 `--only` 中的精确测试名；不指定时运行当前已注册的测试。`--list` 仅配置并列出测试，不构建或启动测试程序。测试名不存在或未启用时直接报错，避免错误筛选后误跑其他测试。
+
+```powershell
+# 查看测试清单，不执行测试
+.\.venv\Scripts\python.exe tools/sdk.py test --project audio --list
+# 仅验证效果链；也可以在 --only 后指定多个精确名称
+.\.venv\Scripts\python.exe tools/sdk.py test --project audio --only rea_effect_chain
+# 窗口比例/尺寸切换测试需要显式启用，并选中需要的测试
+.\.venv\Scripts\python.exe tools/sdk.py test --project audio --with-window-tests --only viewport_runtime
+```
+
+默认 `SDK: test`、命令行 test 和 CMake 测试预设不注册 `host_device_settings`、`runtime_smoke`、`viewport_contracts`、`viewport_runtime`，不会自动创建这些测试窗口、切换窗口尺寸或最大化。只有相关实现变化、排错或明确要求时才按需启用。直接使用 CMake 时设置 `-DBUILD_TESTING=ON -DSDK_ENABLE_WINDOW_TESTS=ON` 才注册这些测试，CTest 标签为 `window`；测试代码和既有验证产物继续保留。命令行每次配置都会根据 `--with-window-tests` 显式设置开关，下一次普通 test 自动恢复关闭状态。
+
 普通构建不下载、不升级依赖。`clean` 只清理所选构建目录中的编译产物，保留配置、编译数据库、依赖、运行数据和旧缓存。
 
 ## 目录和项目隔离

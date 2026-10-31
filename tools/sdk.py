@@ -37,7 +37,8 @@ def configure(args, interactive=False):
          f'-DCMAKE_MAKE_PROGRAM={tool("ninja")}', f'-DPython_EXECUTABLE={sys.executable}',
          f'-DCMAKE_BUILD_TYPE={args.config}', f'-DSDK_PROJECT_DIR={project.directory}',
          f'-DSDK_GENERATED_DIR={generated}', f'-DSDK_BOARD={args.board}',
-         f'-DBUILD_TESTING={"ON" if testing else "OFF"}', *extra], env=env)
+         f'-DBUILD_TESTING={"ON" if testing else "OFF"}',
+         f'-DSDK_ENABLE_WINDOW_TESTS={"ON" if testing and args.with_window_tests else "OFF"}', *extra], env=env)
     if args.command == 'workspace':
         workspace = ide.generate(ROOT, project, args.board, args.config, compiler)
         print(f'Workspace: {workspace}')
@@ -91,6 +92,27 @@ def format_sources(check=False):
         run([formatter, '--style=file:' + str(ROOT / '.clang-format'), *(['--dry-run', '--Werror'] if check else ['-i']), *files[start:start + 30]])
 
 
+def test_command(args, output):
+    ctest = Path(tool('cmake')).with_name('ctest.exe' if sys.platform == 'win32' else 'ctest')
+    command = [ctest, '--test-dir', output]
+    # Listing discovers registered names without running any test executable.
+    report = json.loads(subprocess.check_output(
+        [*command, '--show-only=json-v1'], text=True, encoding='utf-8'))
+    available = {test['name'] for test in report['tests']}
+    if args.only:
+        missing = set(args.only) - available
+        if missing:
+            raise RuntimeError('Unknown or disabled tests: ' + ', '.join(sorted(missing)) +
+                               '. Use test --list; window tests require --with-window-tests.')
+        # Exact names, not arbitrary regular expressions or partial matches.
+        command += ['--tests-regex', '^(' + '|'.join(re.escape(name) for name in args.only) + ')$']
+    if args.list_tests:
+        command += ['--show-only']
+    else:
+        command += ['--output-on-failure', '--no-tests=error']
+    return command
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest='command', required=True)
@@ -116,6 +138,10 @@ def main():
             child.add_argument('--smoke-seconds', type=int, default=0)
             child.add_argument('--no-audio', action='store_true')
             child.add_argument('--show-devices', action='store_true')
+        if command == 'test':
+            child.add_argument('--only', nargs='+', metavar='TEST', help='Run only these exact registered test names')
+            child.add_argument('--list', dest='list_tests', action='store_true', help='Configure and list tests without building or running them')
+            child.add_argument('--with-window-tests', action='store_true', help='Explicitly include JUCE window, device and viewport tests')
     args = parser.parse_args()
     if args.command == 'doctor':
         print(json.dumps({'python': sys.executable, 'cmake': tool('cmake'), 'ninja': tool('ninja'), 'clang-format': tool('clang-format'), 'visual_studio': str(vs_root())}, indent=2))
@@ -137,11 +163,11 @@ def main():
         if args.command == 'run' and args.smoke_seconds and args.smoke_seconds < 3:
             raise RuntimeError('Smoke duration must be at least 3 seconds')
         project, output = configure(args, interactive=args.command == 'menuconfig')
-        if args.command in ('build', 'test', 'run'):
+        selected_test_command = test_command(args, output) if args.command == 'test' else None
+        if args.command in ('build', 'run') or (args.command == 'test' and not args.list_tests):
             run([tool('cmake'), '--build', output, '--parallel', '4'], env=build_env())
         if args.command == 'test':
-            ctest = Path(tool('cmake')).with_name('ctest.exe' if sys.platform == 'win32' else 'ctest')
-            run([ctest, '--test-dir', output, '--output-on-failure'], env=build_env())
+            run(selected_test_command, env=build_env())
         elif args.command == 'run':
             command = [output / 'bin/lvgl_juce.exe', '--data-dir', projects.data_dir(ROOT, project, args.board)]
             if args.smoke_seconds:

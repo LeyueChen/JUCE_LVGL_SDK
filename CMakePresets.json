@@ -16,7 +16,8 @@
         "SDK_BOARD": "windows_sim",
         "SDK_PROJECT_DIR": "${sourceDir}/examples/basic",
         "Python_EXECUTABLE": "${sourceDir}/.venv/Scripts/python.exe",
-        "BUILD_TESTING": "OFF"
+        "BUILD_TESTING": "OFF",
+        "SDK_ENABLE_WINDOW_TESTS": "OFF"
       }
     },
     {
